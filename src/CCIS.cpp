@@ -174,7 +174,7 @@ UINT CCIS::DownloadCIS(SettingConfgInfo *CurSettingConfgInfo,CRootTable *pRootTa
 	// TODO Auto-generated constructor stub
 	UINT Status = 0;
 
-	Status = pmCISDL->Execute(CurSettingConfgInfo,pmflash,pRootTable,pmCISInfo,eCISADDR,&Original_EraseCnt[0],0);
+	Status = pmCISDL->Execute(CurSettingConfgInfo,pmflash,pRootTable,eCISADDR,&Original_EraseCnt[0],0);
 
 	return Status;
 }

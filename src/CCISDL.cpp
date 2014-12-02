@@ -21,7 +21,6 @@ CCISDL::~CCISDL() {
 UINT CCISDL::Execute(	SettingConfgInfo *pCurSettingConfgInfo,
 						CFlash			*pflash,
 						CRootTable		*pRootTable,
-						eMMC_CIS_INFO 	*pCISInfo,
 						UINT 			*eCISADDR,
 						UINT			*Original_EraseCnt,
 						UINT			Terminate){
@@ -106,15 +105,15 @@ UINT CCISDL::Execute(	SettingConfgInfo *pCurSettingConfgInfo,
 
 
 	for(i=0; i<CISBlockNum; i++){ // Sherlock_20140815, Set CIS Block As MLC, 60-bits For Current Read
-		Status = pflash->writeCellMapFlashType(pCISInfo->CIS_RowAddr[i],1);
-		Status = pflash->writeEccMapBitLength(pCISInfo->CIS_RowAddr[i],1);
+		Status = pflash->writeCellMapFlashType(eCISADDR[i],1);
+		Status = pflash->writeEccMapBitLength(eCISADDR[i],1);
 	}
 	for(i=0; i<CISBlockNum; i++){ // Sherlock_20140815, Set CIS Block As MLC, 60-bits into PairMaps For FW Read
-		Status = pRootTable->setCellMap(pCISInfo->CIS_RowAddr[i],pflash,1);
-		Status = pRootTable->setEccMap(pCISInfo->CIS_RowAddr[i],pflash,1);
+		Status = pRootTable->setCellMap(eCISADDR[i],pflash,1);
+		Status = pRootTable->setEccMap(eCISADDR[i],pflash,1);
 	}
 	// Set eCIS BitMap Data
-	pmCisTool->setBlockMaptoBitMap(pflash,pRootTable,pRootTable->getUFDBlockMap(),pCISInfo);
+	pmCisTool->setBlockMaptoBitMap(pflash,pRootTable,pRootTable->getUFDBlockMap(),&eCISSetData);
 
 	// calc the checksum
 	pWORD = (WORD *) &eCISSetData;

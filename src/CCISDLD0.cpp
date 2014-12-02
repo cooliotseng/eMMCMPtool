@@ -22,7 +22,6 @@ CCISDLD0::~CCISDLD0() {
 UINT CCISDLD0::Execute(	SettingConfgInfo *pCurSettingConfgInfo,
 						CFlash			*pflash,
 						CRootTable		*pRootTable,
-						eMMC_CIS_INFO 	*pCISInfo,
 						UINT 			*eCISADDR,
 						UINT			*Original_EraseCnt,
 						UINT			Terminate){
@@ -217,24 +216,24 @@ UINT CCISDLD0::Execute(	SettingConfgInfo *pCurSettingConfgInfo,
 		if(pCurSettingConfgInfo->TestProcedureMask & Proc_SLCPageMode)
 		{
 			for(i=0; i<CISBlockNum; i++){ // Sherlock_20140815, Set CIS Block As MLC, 60-bits into PairMaps For FW Read
-				Status = pRootTable->setCellMap(pCISInfo->CIS_RowAddr[i],pflash,0);
-				Status = pRootTable->setEccMap(pCISInfo->CIS_RowAddr[i],pflash,1);
+				Status = pRootTable->setCellMap(eCISADDR[i],pflash,0);
+				Status = pRootTable->setEccMap(eCISADDR[i],pflash,1);
 			}
 			for(i=0; i<CISBlockNum; i++){ // Sherlock_20140815, Set CIS Block As MLC, 60-bits into PairMaps For FW Read
-				Status = pRootTable->setCellMap(pCISInfo->CIS_RowAddr[i],pflash,0);
-				Status = pRootTable->setEccMap(pCISInfo->CIS_RowAddr[i],pflash,1);
+				Status = pRootTable->setCellMap(eCISADDR[i],pflash,0);
+				Status = pRootTable->setEccMap(eCISADDR[i],pflash,1);
 			}
 		}
 		else
 		{
 			for(i=0; i<CISBlockNum; i++){ // Sherlock_20140815, Set CIS Block As MLC, 60-bits into PairMaps For FW Read
-				Status = pRootTable->setCellMap(pCISInfo->CIS_RowAddr[i],pflash,1);
-				Status = pRootTable->setEccMap(pCISInfo->CIS_RowAddr[i],pflash,1);
+				Status = pRootTable->setCellMap(eCISADDR[i],pflash,1);
+				Status = pRootTable->setEccMap(eCISADDR[i],pflash,1);
 			}
 
 			for(i=0; i<CISBlockNum; i++){ // Sherlock_20140815, Set CIS Block As MLC, 60-bits into PairMaps For FW Read
-				Status = pRootTable->setCellMap(pCISInfo->CIS_RowAddr[i],pflash,1);
-				Status = pRootTable->setEccMap(pCISInfo->CIS_RowAddr[i],pflash,1);
+				Status = pRootTable->setCellMap(eCISADDR[i],pflash,1);
+				Status = pRootTable->setEccMap(eCISADDR[i],pflash,1);
 			}
 		}
 
@@ -242,7 +241,7 @@ UINT CCISDLD0::Execute(	SettingConfgInfo *pCurSettingConfgInfo,
 
 		ptUFDBlockMap = pRootTable->getUFDBlockMap();
 		// Set eCIS BitMap Data
-		Status = pmCisTool->setBlockMaptoBitMap(pflash,pRootTable,ptUFDBlockMap,pCISInfo);
+		Status = pmCisTool->setBlockMaptoBitMap(pflash,pRootTable,ptUFDBlockMap,&eCISSetData);
 		// calc the checksum
 		pWORD = (WORD *) &eCISSetData;
 		for(i=1; i < (int)offsetof(eMMC_CIS_INFO, Bit_Map[0])/2; i++)
