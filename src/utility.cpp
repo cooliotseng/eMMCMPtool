@@ -8,56 +8,56 @@
 
 extern void OpeneMMCTest(){
 	int fd_0, fd_1;
-		char Shellbuf[4096];
-		string tShellbuf ;
-		string mCmdIndexString;
-		stringstream streamIndex;
-		char *majornum;
-		FILE *pp;
+	char Shellbuf[4096];
+	string tShellbuf ;
+	string mCmdIndexString;
+	stringstream streamIndex;
+	char *majornum;
+	FILE *pp;
+	cout <<"insmod vdr_test driver" <<endl;
+	if((pp=popen("lsmod | grep mmc_block","r")) == NULL){
+				std::cout << "Popen() error: " << std::endl;
+	}
 
-		if((pp=popen("lsmod | grep mmc_block","r")) == NULL){
-					std::cout << "Popen() error: " << std::endl;
-		}
+	if(fgets(Shellbuf,sizeof(Shellbuf),pp)!=NULL){
+		system("echo vli | sudo -S rmmod mmc_block");
 
-		if(fgets(Shellbuf,sizeof(Shellbuf),pp)!=NULL){
-			system("echo vli | sudo -S rmmod mmc_block");
+	}
 
-		}
+	if((pp=popen("cat /proc/devices | grep vdr_test","r")) == NULL){
+		std::cout << "Popen() error: " << std::endl;
+	}
+	majornum = strtok(fgets(Shellbuf,sizeof(Shellbuf),pp)," ");
+
+	if(majornum == NULL){
+		system("echo vli | sudo -S insmod mmc_test.ko");
+	}
+
+	if((pp=popen("ls /dev/vdr_test*","r")) == NULL){
+		std::cout << "Popen() error: " << std::endl;
+	}
+
+	if(fgets(Shellbuf,sizeof(Shellbuf),pp)==NULL){
 
 		if((pp=popen("cat /proc/devices | grep vdr_test","r")) == NULL){
-			std::cout << "Popen() error: " << std::endl;
-		}
-		majornum = strtok(fgets(Shellbuf,sizeof(Shellbuf),pp)," ");
+						std::cout << "Popen() error: " << std::endl;
+			}
 
-	    if(majornum == NULL){
-	    	system("echo vli | sudo -S insmod mmc_test.ko");
-	    }
+			majornum = strtok(fgets(Shellbuf,sizeof(Shellbuf),pp)," ");
 
-	    if((pp=popen("ls /dev/vdr_test*","r")) == NULL){
-	        std::cout << "Popen() error: " << std::endl;
-	    }
-
-	    if(fgets(Shellbuf,sizeof(Shellbuf),pp)==NULL){
-
-	    	if((pp=popen("cat /proc/devices | grep vdr_test","r")) == NULL){
-	    	    			std::cout << "Popen() error: " << std::endl;
-	    	    }
-
-	    	    majornum = strtok(fgets(Shellbuf,sizeof(Shellbuf),pp)," ");
-
-	    	    for(int i=0;i<2;i++){
-	    	    	streamIndex.str("");
-	    	    	streamIndex << i;
-	    	    	tShellbuf.assign("echo vli | sudo -S mknod /dev/vdr_test");
-	    	    	tShellbuf.append(streamIndex.str()).append(" ")
-	    	    			.append("c ")
-	    					.append(majornum).append(" ")
-	    					.append(streamIndex.str());
-	    	        system(tShellbuf.c_str());
-	    	    }
-	    }
-	    system("echo vli | sudo -S chown vli:vli /dev/vdr_test*");
-	    pclose(pp);
+			for(int i=0;i<2;i++){
+				streamIndex.str("");
+				streamIndex << i;
+				tShellbuf.assign("echo vli | sudo -S mknod /dev/vdr_test");
+				tShellbuf.append(streamIndex.str()).append(" ")
+						.append("c ")
+						.append(majornum).append(" ")
+						.append(streamIndex.str());
+				system(tShellbuf.c_str());
+			}
+	}
+	system("echo vli | sudo -S chown vli:vli /dev/vdr_test*");
+	pclose(pp);
 }
 
 extern void CloseMMCTest(){
@@ -65,6 +65,7 @@ extern void CloseMMCTest(){
 	system("echo vli | sudo -S rm -f  /dev/vdr_test*");
 	system("echo vli | sudo -S rmmod mmc_test");
 	system("echo vli | sudo -S insmod /lib/modules/3.19.3/kernel/drivers/mmc/card/mmc_block.ko");
+	cout <<"remove vdr_test driver" <<endl;
 }
 
 

@@ -30,10 +30,8 @@ CFlash::CFlash(IeMMCDriver *pDriver,FlashStructure *tFlashStructure) {
 	moldversionCISflag = -1;
 	memcpy(pmFlashStructure,tFlashStructure,sizeof(FlashStructure));
 
-	pmFlashStructure->ForceCE = 2;//coolio temp
 	if(pmFlashStructure->ForceCE!=0)
 		mChipSelectNum = pmFlashStructure->ForceCE;
-	 pmFlashStructure->ForceCH = 2; //coolio temp
 	if(pmFlashStructure->ForceCH!=0)
 		mChannelNum = pmFlashStructure->ForceCH;
 
@@ -274,7 +272,7 @@ UINT CFlash:: DownloadVDRFw(char *FWFileName) {
 	Offset = 4;
 	for(idx=0; idx<FunctionTableCnt; idx++)
 	{
-		fseek(FWBinFile, Offset, SEEK_SET);
+		fseek(FWBinFile, Offset, 0);
 		dwBytesRead = fread(&Header,sizeof(char),8,FWBinFile);
 		FunctionTblLen[idx] = ((UINT)Header[3]<<24) | ((UINT)Header[2]<<16) | ((UINT)Header[1]<<8) | Header[0];
 		FunctionTblAdr[idx] = ((UINT)Header[7]<<24) | ((UINT)Header[6]<<16) | ((UINT)Header[5]<<8) | Header[4];
@@ -294,7 +292,7 @@ UINT CFlash:: DownloadVDRFw(char *FWFileName) {
 
 	// -- Get & DL_VDR Code -
 	VDRCodeBuf = (BYTE *)malloc(sizeof(BYTE)*VDRCodeLen);
-	fseek(FWBinFile, Offset, SEEK_SET);
+	fseek(FWBinFile, Offset, 0);
 	dwBytesRead = fread(&VDRCodeBuf,sizeof(char),VDRCodeLen,FWBinFile);
 	Status = INITISP((ULONG)0x20000000, (USHORT)VDRCodeLen, VDRCodeBuf);
 	if(!Status)
@@ -308,7 +306,7 @@ UINT CFlash:: DownloadVDRFw(char *FWFileName) {
 	{
 
  		FunctionTblBuf = (BYTE *)malloc(sizeof(BYTE)*FunctionTblLen[idx]);
- 		fseek(FWBinFile, FunctionTblOfs[idx], SEEK_SET);
+ 		fseek(FWBinFile, FunctionTblOfs[idx], 0);
 		dwBytesRead = fread(&FunctionTblBuf,sizeof(char),FunctionTblLen[idx],FWBinFile);
 		RemainLen = FunctionTblLen[idx];
 		RegAdrOfs = 0;
