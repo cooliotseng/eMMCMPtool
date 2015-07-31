@@ -3,6 +3,70 @@
 #include <stdlib.h>
 #include <string.h>
 #include <iostream>
+#include <sstream>
+#include <string>
+
+extern void OpeneMMCTest(){
+	int fd_0, fd_1;
+		char Shellbuf[4096];
+		string tShellbuf ;
+		string mCmdIndexString;
+		stringstream streamIndex;
+		char *majornum;
+		FILE *pp;
+
+		if((pp=popen("lsmod | grep mmc_block","r")) == NULL){
+					std::cout << "Popen() error: " << std::endl;
+		}
+
+		if(fgets(Shellbuf,sizeof(Shellbuf),pp)!=NULL){
+			system("echo vli | sudo -S rmmod mmc_block");
+
+		}
+
+		if((pp=popen("cat /proc/devices | grep vdr_test","r")) == NULL){
+			std::cout << "Popen() error: " << std::endl;
+		}
+		majornum = strtok(fgets(Shellbuf,sizeof(Shellbuf),pp)," ");
+
+	    if(majornum == NULL){
+	    	system("echo vli | sudo -S insmod mmc_test.ko");
+	    }
+
+	    if((pp=popen("ls /dev/vdr_test*","r")) == NULL){
+	        std::cout << "Popen() error: " << std::endl;
+	    }
+
+	    if(fgets(Shellbuf,sizeof(Shellbuf),pp)==NULL){
+
+	    	if((pp=popen("cat /proc/devices | grep vdr_test","r")) == NULL){
+	    	    			std::cout << "Popen() error: " << std::endl;
+	    	    }
+
+	    	    majornum = strtok(fgets(Shellbuf,sizeof(Shellbuf),pp)," ");
+
+	    	    for(int i=0;i<2;i++){
+	    	    	streamIndex.str("");
+	    	    	streamIndex << i;
+	    	    	tShellbuf.assign("echo vli | sudo -S mknod /dev/vdr_test");
+	    	    	tShellbuf.append(streamIndex.str()).append(" ")
+	    	    			.append("c ")
+	    					.append(majornum).append(" ")
+	    					.append(streamIndex.str());
+	    	        system(tShellbuf.c_str());
+	    	    }
+	    }
+
+	    pclose(pp);
+}
+
+extern void CloseMMCTest(){
+	system("ls /dev/vdr_test*");
+	system("echo vli | sudo -S rm -f  /dev/vdr_test*");
+	system("echo vli | sudo -S rmmod mmc_test");
+	system("echo vli | sudo -S insmod mmc_block");
+}
+
 
 extern ULONG FileSize(FILE *fp) {
 

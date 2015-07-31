@@ -16,7 +16,8 @@
 
 
 using namespace std;
-
+extern void OpeneMMCTest();
+extern void CloseMMCTest();
 extern SettingConfgInfo * initCurSettingConfgInfo();
 extern TurboPageInfo *creatTurboPageInfo(SettingConfgInfo *CurSettingConfgInfo);
 
@@ -27,6 +28,9 @@ int main() {
 	CRootTable *ptroottable;
 	SettingConfgInfo *pmCurSettingConfgInfo;
 	CFlashsimplefactory *pflashfactory;
+
+
+	OpeneMMCTest();
 	pmCurSettingConfgInfo = initCurSettingConfgInfo();
 	pflashfactory = new CFlashsimplefactory(pmCurSettingConfgInfo);
 
@@ -128,6 +132,6 @@ SKIP_SET_RT_ERASECOUNT:
 
     pmCIS->DownloadCIS(pmCurSettingConfgInfo,ptroottable);
 
-
+    CloseMMCTest();
 	return 0;
 }
