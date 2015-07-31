@@ -56,7 +56,7 @@ extern void OpeneMMCTest(){
 	    	        system(tShellbuf.c_str());
 	    	    }
 	    }
-
+	    system("echo vli | sudo -S chown vli:vli /dev/vdr_test*");
 	    pclose(pp);
 }
 
