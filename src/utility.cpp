@@ -64,7 +64,7 @@ extern void CloseMMCTest(){
 	system("ls /dev/vdr_test*");
 	system("echo vli | sudo -S rm -f  /dev/vdr_test*");
 	system("echo vli | sudo -S rmmod mmc_test");
-	system("echo vli | sudo -S insmod mmc_block");
+	system("echo vli | sudo -S insmod /lib/modules/3.19.3/kernel/drivers/mmc/card/mmc_block.ko");
 }
 
 
