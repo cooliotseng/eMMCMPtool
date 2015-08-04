@@ -40,7 +40,7 @@ FlashStructure * TH58TE67DDKBA4C::CreatFlashStructure(SettingConfgInfo *pCurSett
 	pmFlashFwScheme->BlockPage=256;
 	pmFlashFwScheme->PageSEC=32;
 	pmFlashFwScheme->SelectPlane=2;
-	pmFlashFwScheme->PlaneBlock=1058;
+	pmFlashFwScheme->PlaneBlock=1066;
 
 	if(pCurSettingConfgInfo->ForceCE!=0)
 		pmFlashFwScheme->SelectNO=pCurSettingConfgInfo->ForceCE;
