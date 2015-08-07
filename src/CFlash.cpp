@@ -218,13 +218,6 @@ UINT CFlash::setFlashSize() {
 	return Status;
 }
 
-UINT CFlash::INITISP(ULONG AddrOffset, USHORT BufLen, BYTE *buffer) {
-	// TODO Auto-generated constructor stub
-	cout << "CeMMCDriver::INITISP" << endl;
-	return 0;
-}
-
-
 WORD CFlash::getBaseFType(){
 	// TODO Auto-generated constructor stub
 	return mBaseFType;
@@ -1397,4 +1390,41 @@ UINT CFlash::SetInfoWriteCMD(BYTE adapter_id, BYTE target_id, VendorCMD VCMD, BY
 
 	return pmDriver->SetInfoWriteCMD(adapter_id, target_id, VCMD, buffer);
 
+}
+
+UINT CFlash::INITISP(ULONG AddrOffset, USHORT BufLen, BYTE *buffer) {
+	// TODO Auto-generated constructor stub
+	cout << "CeMMCDriver::INITISP" << endl;
+	BOOL	Status=true;
+
+	// Sherlock_20111110, Add A Special Flag for SendTURdy in Scan_Only Mode.
+	BYTE	WaitCnt = 0, ScsiStatus, SendTURdy = 0;
+	if(AddrOffset & 0x0001)
+	{
+		SendTURdy = 1;
+		AddrOffset = AddrOffset&(~0x0001);
+	}
+
+	Status=pmDriver->UFDSettingWrite(MI_INIT_ISP, 0, 0, 0, AddrOffset, BufLen, buffer);
+
+// Sherlock_20111110, Add A Special Flag for SendTURdy in Scan_Only Mode.
+	if(SendTURdy)
+	{
+		while(WaitCnt<5) // 5
+		{
+			usleep(200000);
+			if(pmDriver->SendTestUnitReady(0, 0, 0, &ScsiStatus))
+			{
+				if(!ScsiStatus)	break;
+			}
+			else
+			{
+				cout << "TURdy_Fail" << endl;
+			}
+
+			WaitCnt++;
+		}
+	}
+
+	return Status;
 }

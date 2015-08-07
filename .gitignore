@@ -1,1 +1,4 @@
 /Debug/
+.cproject
+.eMMCMPtool.udp
+.settings/org.eclipse.cdt.managedbuilder.core.prefs
