@@ -1,0 +1,16 @@
+eclipse.preferences.version=1
+environment/buildEnvironmentInclude/cdt.managedbuild.config.gnu.mingw.exe.debug.601152570/CPATH/delimiter=;
+environment/buildEnvironmentInclude/cdt.managedbuild.config.gnu.mingw.exe.debug.601152570/CPATH/operation=remove
+environment/buildEnvironmentInclude/cdt.managedbuild.config.gnu.mingw.exe.debug.601152570/CPLUS_INCLUDE_PATH/delimiter=;
+environment/buildEnvironmentInclude/cdt.managedbuild.config.gnu.mingw.exe.debug.601152570/CPLUS_INCLUDE_PATH/operation=replace
+environment/buildEnvironmentInclude/cdt.managedbuild.config.gnu.mingw.exe.debug.601152570/CPLUS_INCLUDE_PATH/value=C\:\\Program Files\\Java\\jdk1.8.0_25\\include;C\:\\Program Files\\Java\\jdk1.8.0_25\\include\\win32;C\:\\MinGW_64\\lib64\\gcc\\x86_64-w64-mingw32\\4.8.3
+environment/buildEnvironmentInclude/cdt.managedbuild.config.gnu.mingw.exe.debug.601152570/C_INCLUDE_PATH/delimiter=;
+environment/buildEnvironmentInclude/cdt.managedbuild.config.gnu.mingw.exe.debug.601152570/C_INCLUDE_PATH/operation=replace
+environment/buildEnvironmentInclude/cdt.managedbuild.config.gnu.mingw.exe.debug.601152570/C_INCLUDE_PATH/value=\ C\:\\Program Files\\Java\\jdk1.8.0_25\\include;C\:\\Program Files\\Java\\jdk1.8.0_25\\include\\win32;C\:\\MinGW_64\\include
+environment/buildEnvironmentInclude/cdt.managedbuild.config.gnu.mingw.exe.debug.601152570/append=true
+environment/buildEnvironmentInclude/cdt.managedbuild.config.gnu.mingw.exe.debug.601152570/appendContributed=true
+environment/buildEnvironmentLibrary/cdt.managedbuild.config.gnu.mingw.exe.debug.601152570/LIBRARY_PATH/delimiter=;
+environment/buildEnvironmentLibrary/cdt.managedbuild.config.gnu.mingw.exe.debug.601152570/LIBRARY_PATH/operation=replace
+environment/buildEnvironmentLibrary/cdt.managedbuild.config.gnu.mingw.exe.debug.601152570/LIBRARY_PATH/value=C\:\\MinGW_64\\lib64
+environment/buildEnvironmentLibrary/cdt.managedbuild.config.gnu.mingw.exe.debug.601152570/append=true
+environment/buildEnvironmentLibrary/cdt.managedbuild.config.gnu.mingw.exe.debug.601152570/appendContributed=true

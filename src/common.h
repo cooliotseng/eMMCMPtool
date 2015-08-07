@@ -878,3 +878,22 @@ const BYTE WriteCMD_TSB_2P[14] = {0x02,0x1B,0x80,0x5,0x11,0x0,0x0,0x0,0x81,0x5,0
 
 #define MaxChipSelect 4
 
+//***************************************************************************
+//				 %%% Commands for all Device Types %%%
+//***************************************************************************
+#define SCSI_CHANGE_DEF	0x40		// Change Definition (Optional)
+#define SCSI_COMPARE		0x39		// Compare (O)
+#define SCSI_COPY			0x18		// Copy (O)
+#define SCSI_COP_VERIFY	0x3A		// Copy and Verify (O)
+#define SCSI_INQUIRY		0x12		// Inquiry (MANDATORY)
+#define SCSI_LOG_SELECT	0x4C		// Log Select (O)
+#define SCSI_LOG_SENSE	0x4D		// Log Sense (O)
+#define SCSI_MODE_SEL6	0x15		// Mode Select 6-byte (Device Specific)
+#define SCSI_MODE_SEL10	0x55		// Mode Select 10-byte (Device Specific)
+#define SCSI_MODE_SEN6	0x1A		// Mode Sense 6-byte (Device Specific)
+#define SCSI_MODE_SEN10	0x5A		// Mode Sense 10-byte (Device Specific)
+#define SCSI_READ_BUFF	0x3C		// Read Buffer (O)
+#define SCSI_REQ_SENSE	0x03		// Request Sense (MANDATORY)
+#define SCSI_SEND_DIAG	0x1D		// Send Diagnostic (O)
+#define SCSI_TST_U_RDY	0x00		// Test Unit Ready (MANDATORY)
+#define SCSI_WRITE_BUFF	0x3B		// Write Buffer (O)
