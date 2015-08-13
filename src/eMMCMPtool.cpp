@@ -43,7 +43,7 @@ int main() {
 	// == 3-1 Download "VDR_FW\EMMC_VDR.bin"             ==
 	// ====================================================
 	cout <<"STEP 3/10: DOWNLOAD VDR FW " <<endl;
-    status = pmflash->DownloadVDRFw("EMMC_VDR_2P_MP.bin");
+    status = pmflash->DownloadVDRFw("EMMC_VDR_2P_MP_D0_TOSHIBA.bin");
 
     if(status != Success_State){
     	return status ;

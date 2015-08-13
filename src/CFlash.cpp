@@ -286,7 +286,7 @@ UINT CFlash:: DownloadVDRFw(char *FWFileName) {
 	// -- Get & DL_VDR Code -
 	VDRCodeBuf = (BYTE *)malloc(sizeof(BYTE)*VDRCodeLen);
 	fseek(FWBinFile, Offset, 0);
-	dwBytesRead = fread(&VDRCodeBuf,sizeof(char),VDRCodeLen,FWBinFile);
+	dwBytesRead = fread(VDRCodeBuf,sizeof(char),(UINT)VDRCodeLen,FWBinFile);
 	Status = INITISP((ULONG)0x20000000, (USHORT)VDRCodeLen, VDRCodeBuf);
 	if(!Status)
 		Status=INIT_VDR_FW_Error;
@@ -300,7 +300,7 @@ UINT CFlash:: DownloadVDRFw(char *FWFileName) {
 
  		FunctionTblBuf = (BYTE *)malloc(sizeof(BYTE)*FunctionTblLen[idx]);
  		fseek(FWBinFile, FunctionTblOfs[idx], 0);
-		dwBytesRead = fread(&FunctionTblBuf,sizeof(char),FunctionTblLen[idx],FWBinFile);
+		dwBytesRead = fread(FunctionTblBuf,sizeof(char),FunctionTblLen[idx],FWBinFile);
 		RemainLen = FunctionTblLen[idx];
 		RegAdrOfs = 0;
 		while(RemainLen != 0) //  For Length > 256 Bytes

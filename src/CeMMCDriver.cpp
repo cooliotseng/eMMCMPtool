@@ -1026,8 +1026,8 @@ UINT CeMMCDriver::UFDSettingWrite(BYTE MI_CMD, BYTE CFG0, BYTE adapter_id, BYTE 
 	sptwb.spt.Cdb[5] = LOBYTE(LOWORD(Address));
 	sptwb.spt.Cdb[6] = MI_CMD;
 
-		sptwb.spt.Cdb[7] = HIBYTE((BufLen/512));
-		sptwb.spt.Cdb[8] = LOBYTE((BufLen/512));
+	sptwb.spt.Cdb[7] = HIBYTE((BufLen/512));
+	sptwb.spt.Cdb[8] = LOBYTE((BufLen/512));
 
 
 
@@ -1036,7 +1036,7 @@ UINT CeMMCDriver::UFDSettingWrite(BYTE MI_CMD, BYTE CFG0, BYTE adapter_id, BYTE 
 
 	sptwb.spt.ScsiStatus = 1;	 // Sherlock_20121130, Add SCSI Protection For Multi-Device
 
-	memcpy(sptwb.ucDataBuf, buffer, sptwb.spt.DataTransferLength);
+	memcpy(sptwb.ucDataBuf, buffer,sptwb.spt.DataTransferLength);
 
 
 	status = pmPackedCommand->SendPackageCmd(&sptwb,
