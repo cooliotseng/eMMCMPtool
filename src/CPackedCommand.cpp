@@ -165,9 +165,12 @@ BOOL CPackedCommand::SendReadWriteCMD(ULONG BufLen, BYTE *buffer,UINT AccessType
 	//printf("this is CeMMCDeviceIO:%s SCSIRead:%d\n",&mSymbolicname,this);
 	ULONG OutBufferlength = 0, Datalength = 0,returned = 0;
 	int fd_RW;
+	WORD DataTransferLength;
 
 	fd_RW = open ("/dev/vdr_test1", O_RDWR);
-
+    DataTransferLength = (WORD)((BufLen+511)/512)*512;
+	
+	
 	if (fd_RW < 0) {
 		perror ("Open /dev/vdr_test error! QQ!");
 		exit (1);
@@ -175,9 +178,9 @@ BOOL CPackedCommand::SendReadWriteCMD(ULONG BufLen, BYTE *buffer,UINT AccessType
 
 	if(AccessType == ACCESS_READ_DATA)
 	{
-		Datalength = read(fd_RW, buffer,BufLen);
+		Datalength = read(fd_RW, buffer,DataTransferLength);
 	}else{
-		Datalength = write(fd_RW, buffer,BufLen);
+		Datalength = write(fd_RW, buffer,DataTransferLength);
 	}
 
 	close (fd_RW);
