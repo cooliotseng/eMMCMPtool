@@ -24,7 +24,7 @@ CFlash::CFlash() {
 
 CFlash::CFlash(IeMMCDriver *pDriver,FlashStructure *tFlashStructure) {
 	// TODO Auto-generated constructor stub
-
+	UINT	Status = 0;
 	pmDriver = pDriver;
 	pmFlashStructure = new FlashStructure();
 	moldversionCISflag = -1;
@@ -37,8 +37,8 @@ CFlash::CFlash(IeMMCDriver *pDriver,FlashStructure *tFlashStructure) {
 
 	mEntryItemNum = initEntryItemNum()/8;
 
-	pmDriver->enableMPFunction();
-	pmDriver->enableReadSpareArea();
+	Status=pmDriver->enableMPFunction();
+	Status=pmDriver->enableReadSpareArea();
 }
 
 

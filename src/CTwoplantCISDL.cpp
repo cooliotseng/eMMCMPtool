@@ -116,7 +116,7 @@ UINT CTwoplantCISDL::Execute(SettingConfgInfo *pCurSettingConfgInfo,
 	RxDataBuf=(BYTE *)malloc(sizeof(BYTE)*ISPTotalByte);
 	memset(TxDataBuf, 0, sizeof(BYTE)*ISPTotalByte);
 	dwBytesRead=fread(TxDataBuf,sizeof(char),BootLoaderSize,BLBinFile);
-	dwBytesRead=fread(TxDataBuf[BootLoaderSize],sizeof(char),ISPRealByte,ISPBinFile);
+	dwBytesRead=fread(&TxDataBuf[BootLoaderSize],sizeof(char),ISPRealByte,ISPBinFile);
 
 // Sherlock_20140814, Put Here For "GOTO"
 	BYTE	*RTDataBuf, *LastRTDataBuf;

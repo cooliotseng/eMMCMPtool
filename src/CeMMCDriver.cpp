@@ -18,7 +18,7 @@ CeMMCDriver::~CeMMCDriver() {
 
 UINT CeMMCDriver::readData(ULONG Address, USHORT BufLen, BYTE *buffer) {
 	// TODO Auto-generated constructor stub
-	BOOL	Status=true;
+	UINT	Status = Fail_State;
 
 	Status=AccessMemoryRead(MI_READ_DATA, 0, 0, Address, BufLen, buffer);
 
@@ -27,7 +27,7 @@ UINT CeMMCDriver::readData(ULONG Address, USHORT BufLen, BYTE *buffer) {
 
 UINT CeMMCDriver::writeData(ULONG Address, USHORT BufLen, BYTE *buffer) {
 	// TODO Auto-generated constructor stub
-	BOOL	Status=true;
+	UINT	Status = Fail_State;
 
 	Status=AccessMemoryWrite( MI_WRITE_DATA, 0, 0, Address, BufLen, buffer);
 
@@ -38,10 +38,15 @@ UINT CeMMCDriver::writeData(ULONG Address, USHORT BufLen, BYTE *buffer) {
 UINT CeMMCDriver::enableMPFunction() {
 	// TODO Auto-generated constructor stub
 	UINT	Status = Fail_State;
-	BYTE	Register;
-	Status = readData( 0x1FF8001C, 1, &Register);
+
+	BYTE	Register = 0xff;
+	Status = readData(0x1FF8001C,1,&Register);
+
+	if (Status == Fail_State){
+		return Status;
+	}
 	Register|=0x00000010 ; // Enable Write
-	Status = writeData( 0x1FF8001C, 1, &Register);
+	Status = writeData(0x1FF8001C,1,&Register);
 
 	return Status;
 }
@@ -375,7 +380,7 @@ UINT CeMMCDriver:: AccessMemoryWrite(BYTE MI_CMD, BYTE adapter_id, BYTE target_i
 	// TODO Auto-generated constructor stub
 
 		SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-		BOOL status = 0;
+		UINT	status = Fail_State;
 		ULONG length = 0, returned = 0;
 
 		memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
@@ -432,7 +437,7 @@ UINT CeMMCDriver::AccessMemoryRead(BYTE MI_CMD, BYTE adapter_id, BYTE target_id,
 	// TODO Auto-generated constructor stub
 
 		SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-		BOOL status = 0;
+		UINT	status = Fail_State;
 		ULONG length = 0, returned = 0;
 
 		memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
@@ -1044,7 +1049,7 @@ UINT CeMMCDriver::UFDSettingWrite(BYTE MI_CMD, BYTE CFG0, BYTE adapter_id, BYTE 
 											Address,
 											BufLen,
 											buffer,
-											PACK_SCSI,
+											PACK_EMMC,
 											ACCESS_WRITE_DATA,
 											UNPACK_STATUS);
 	return status;

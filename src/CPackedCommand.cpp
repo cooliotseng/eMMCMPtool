@@ -30,20 +30,21 @@ CPackedCommand::~CPackedCommand() {
 	// TODO Auto-generated destructor stub
 }
 
-BOOL CPackedCommand::SendPackageCmd(LPVOID lpInBuffer,DWORD nInBufferSize,
+UINT CPackedCommand::SendPackageCmd(LPVOID lpInBuffer,DWORD nInBufferSize,
 							ULONG LBA, ULONG BufLen, BYTE *buffer,
 							UINT PackMode,
 							UINT AccessType,
 							UINT UnPackMode){
 
-	BYTE	Error_Code = 0;
+	BOOL	Error_Code = FALSE;
 	void (*PackMessage[])(IN LPVOID lpInBuffer,IN UINT AccessType,OUT BYTE *PackDataBuf)
 		= {PackSCSI, PackeMMC};
 	BOOL (*UnpackMessage[])(INOUT BYTE *DataBuffer,IN ULONG BufLen,IN BYTE *PackDataBuf)
 		= {UnPackStatus, UnPackData, UnPackReg1Byte};
 
 	enum STATE state=CMD_PHASE;
-	BOOL	stateExit = TRUE, status = FALSE;
+	UINT	status = Fail_State;
+	BOOL	stateExit = TRUE;
 	ULONG	V_Address=0x001E;
 	UINT	SCSIRetryCnt = RETRY_COUNT, eMMCRetryCnt = RETRY_COUNT;
 	BYTE	*PackBuf;
@@ -70,7 +71,6 @@ BOOL CPackedCommand::SendPackageCmd(LPVOID lpInBuffer,DWORD nInBufferSize,
 				//status = SendReadWriteCMD(V_Address, PACKET_BLOCK_SIZE, PackBuf, ACCESS_WRITE_DATA, 0,0,0);
 				n = write (fd_status, PackBuf, PACKET_BLOCK_SIZE);
 
-
 				// Always Sent 512Byte Command From PackBuf to FW
 				if(n < 0)
 				{
@@ -78,8 +78,9 @@ BOOL CPackedCommand::SendPackageCmd(LPVOID lpInBuffer,DWORD nInBufferSize,
 					state = CMD_PHASE;
 					if(SCSIRetryCnt == 0 )
 					{
+						close(fd_status);
 						free(PackBuf);
-						return FALSE;
+						return Fail_State;
 					}
 					break;
 				}
@@ -95,16 +96,20 @@ BOOL CPackedCommand::SendPackageCmd(LPVOID lpInBuffer,DWORD nInBufferSize,
 			case DATA_PHASE:
 			{
 				printf("state is DATA_PHASE\n");
+
 				status = SendReadWriteCMD(BufLen, buffer, AccessType);
+
+				//status = 1;
 				// Get/Sent 64KByte(Max) Data Through buffer From/To FW
-				if(status == FALSE)
+				if(status == Fail_State)
 				{
 					SCSIRetryCnt--;
 					state = DATA_PHASE;
 					if(SCSIRetryCnt == 0 )
 					{
+						close(fd_status);
 						free(PackBuf);
-						return FALSE;
+						return Fail_State;
 					}
 					break;
 				}
@@ -119,6 +124,7 @@ BOOL CPackedCommand::SendPackageCmd(LPVOID lpInBuffer,DWORD nInBufferSize,
 				printf("state is STATUS_PHASE\n");
 				//status = SendReadWriteCMD(V_Address, PACKET_BLOCK_SIZE, PackBuf, ACCESS_READ_DATA, 0,0,0);
 				n = read(fd_status, PackBuf, PACKET_BLOCK_SIZE);
+
 				// Always Get 512Byte Status From FW to PackBuf
 				if(n < 0 )
 				{
@@ -126,8 +132,9 @@ BOOL CPackedCommand::SendPackageCmd(LPVOID lpInBuffer,DWORD nInBufferSize,
 					state = STATUS_PHASE;
 					if(SCSIRetryCnt == 0 )
 					{
+						close(fd_status);
 						free(PackBuf);
-						return FALSE;
+						return Fail_State;
 					}
 					break;
 				}
@@ -142,8 +149,9 @@ BOOL CPackedCommand::SendPackageCmd(LPVOID lpInBuffer,DWORD nInBufferSize,
 					eMMCRetryCnt--;
 					if(eMMCRetryCnt == 0 )
 					{
+						close(fd_status);
 						free(PackBuf);
-						return FALSE;
+						return Fail_State;
 					}
 					break;
 				}
@@ -157,20 +165,17 @@ BOOL CPackedCommand::SendPackageCmd(LPVOID lpInBuffer,DWORD nInBufferSize,
 	}
 	close(fd_status);
 	free(PackBuf);
-	return TRUE;
+	return Success_State;
 }
 
-BOOL CPackedCommand::SendReadWriteCMD(ULONG BufLen, BYTE *buffer,UINT AccessType)
+UINT CPackedCommand::SendReadWriteCMD(ULONG BufLen, BYTE *buffer,UINT AccessType)
 {
 	//printf("this is CeMMCDeviceIO:%s SCSIRead:%d\n",&mSymbolicname,this);
 	ULONG OutBufferlength = 0, Datalength = 0,returned = 0;
 	int fd_RW;
-	WORD DataTransferLength;
-
+	BYTE TMPBuf[512]={0};
 	fd_RW = open ("/dev/vdr_test1", O_RDWR);
-    DataTransferLength = (WORD)((BufLen+511)/512)*512;
-	
-	
+
 	if (fd_RW < 0) {
 		perror ("Open /dev/vdr_test error! QQ!");
 		exit (1);
@@ -178,16 +183,22 @@ BOOL CPackedCommand::SendReadWriteCMD(ULONG BufLen, BYTE *buffer,UINT AccessType
 
 	if(AccessType == ACCESS_READ_DATA)
 	{
-		Datalength = read(fd_RW, buffer,DataTransferLength);
+		if(BufLen<512){
+			Datalength = read(fd_RW, TMPBuf,512);
+			memcpy(buffer,TMPBuf,BufLen);
+		}else{
+			Datalength = read(fd_RW, buffer,BufLen);
+		}
+
 	}else{
-		Datalength = write(fd_RW, buffer,DataTransferLength);
+		Datalength = write(fd_RW, buffer,BufLen);
 	}
 
 	close (fd_RW);
 	if (Datalength > 0){
-		return TRUE;
+		return Success_State;
 	}else{
-		return FALSE;
+		return Fail_State;
 	}
 }
 

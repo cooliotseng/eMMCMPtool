@@ -45,13 +45,13 @@ class CPackedCommand {
 public:
 	CPackedCommand();
 	virtual ~CPackedCommand();
-	BOOL SendPackageCmd(LPVOID lpInBuffer,DWORD nInBufferSize,
+	UINT SendPackageCmd(LPVOID lpInBuffer,DWORD nInBufferSize,
 						ULONG LBA, ULONG BufLen, BYTE *buffer,
 						UINT PackMode,
 						UINT AccessType,
 						UINT UnPackMode);
 private:
-	BOOL SendReadWriteCMD(ULONG BufLen, BYTE *buffer,UINT AccessType);
+	UINT SendReadWriteCMD(ULONG BufLen, BYTE *buffer,UINT AccessType);
 	void CalCheckSum(IN UCHAR *DataIn,OUT BYTE *DataOut);
 };
 
