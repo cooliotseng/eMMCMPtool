@@ -205,16 +205,6 @@ UINT CFlash::setFlashSize() {
 	if(!Status)
 		return Status;
 
-
-	// Sherlock_20140725, Send BlockPage For New Read Block & Spare
-	VendorCMD	VCMD;
-	memset(&VCMD, 0x00, sizeof(VendorCMD));
-
-	VCMD.OPCode = 0xEE;
-	VCMD.CFG[0] = HIBYTE(mBlockPage);
-	VCMD.CFG[1] = LOBYTE(mBlockPage);
-	Status = pmDriver->sendGetCommand(VCMD, NULL);
-
 	return Status;
 }
 
@@ -1396,7 +1386,7 @@ UINT CFlash::INITISP(ULONG AddrOffset, USHORT BufLen, BYTE *buffer) {
 	// TODO Auto-generated constructor stub
 	cout << "CeMMCDriver::INITISP" << endl;
 	BOOL	Status=true;
-
+	BYTE buffertmp[512];
 	// Sherlock_20111110, Add A Special Flag for SendTURdy in Scan_Only Mode.
 	BYTE	WaitCnt = 0, ScsiStatus, SendTURdy = 0;
 	if(AddrOffset & 0x0001)
@@ -1404,7 +1394,7 @@ UINT CFlash::INITISP(ULONG AddrOffset, USHORT BufLen, BYTE *buffer) {
 		SendTURdy = 1;
 		AddrOffset = AddrOffset&(~0x0001);
 	}
-
+    memcpy(buffertmp,buffer,512);
 	Status=pmDriver->UFDSettingWrite(MI_INIT_ISP, 0, 0, 0, AddrOffset, BufLen, buffer);
 
 // Sherlock_20111110, Add A Special Flag for SendTURdy in Scan_Only Mode.

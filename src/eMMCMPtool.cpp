@@ -38,11 +38,11 @@ int main() {
 	pmflash = pflashfactory->CreatFalsh(Th58TE67DDKBA4C);
 
 	// ====================================================
-	// ==         STEP 3/10: DOWNLOAD VDR FW             ==
+	// ==         STEP 1/6: DOWNLOAD VDR FW             ==
 	// ==                                                ==
 	// == 3-1 Download "VDR_FW\EMMC_VDR.bin"             ==
 	// ====================================================
-	cout <<"STEP 3/10: DOWNLOAD VDR FW " <<endl;
+	cout <<"STEP 1/6: DOWNLOAD VDR FW " <<endl;
     status = pmflash->DownloadVDRFw("EMMC_VDR_2P_MP_D0_TOSHIBA.bin");
 
     if(status != Success_State){
@@ -50,12 +50,12 @@ int main() {
     }
 
     // =========================================================================
-    // ==         STEP 4/10: SET PAGE SIZE & ECC                              ==
+    // ==         STEP 2/6: SET PAGE SIZE & ECC                              ==
     // ==                                                                     ==
     // == 4-1 Get Block Size & Page Size                                      ==
     // == 4-2 Set BlockPage, PageSize & ECC of Reg[0x1FF82600] [0x1FF82608]   ==
     // =========================================================================
-    cout <<" STEP 4/10: SET PAGE SIZE & ECC " <<endl;
+    cout <<" STEP 2/6: SET PAGE SIZE & ECC " <<endl;
     status = pmflash->resetEcc();
 
     if(status != Success_State){
@@ -69,13 +69,13 @@ int main() {
      }
 
     // ==========================================================
-    // ==    STEP 5/10: SET ERASE COUNT OF ROOT TABLE          ==
+    // ==    STEP 3/6: SET ERASE COUNT OF ROOT TABLE          ==
     // ==                                                      ==
     // == 5-1 Set Turbo Pages For VDR Use                      ==
     // == 5-2 Get Root Table Address From VDR                  ==
     // == 5-3 Set Erase Count of Root Table & Cache Blocks     ==
     // ==========================================================
-    cout <<" STEP 5/10: SET ERASE COUNT OF ROOT TABLE " <<endl;
+    cout <<" STEP 3/6: SET ERASE COUNT OF ROOT TABLE " <<endl;
     if(pmflash->isOldVersionCISExit()){
 
     		goto SKIP_SET_RT_ERASECOUNT;
@@ -90,12 +90,12 @@ int main() {
 SKIP_SET_RT_ERASECOUNT:
 
     // ====================================================
-	// ==          STEP 6/10: SCAN FLASH                 ==
+	// ==          STEP 4/6: SCAN FLASH                 ==
 	// ==                                                ==
 	// == 5-1 Set Page_Size & ECC_Bit                    ==
 	// == 5-2 Scan Flash Block                           ==
 	// ====================================================
-	cout <<" STEP 6/10: SCAN FLASH  " <<endl;
+	cout <<" STEP 4/6: SCAN FLASH  " <<endl;
 	if(pmflash->isOldVersionCISExit()){
 
 		status = ptroottable->writeCellMap();
@@ -112,12 +112,12 @@ SKIP_SET_RT_ERASECOUNT:
   	 }
 
 	// ====================================================
-	// ==           STEP 7/10: FIND CIS BLOCK            ==
+	// ==           STEP 5/6: FIND CIS BLOCK            ==
 	// ==                                                ==
 	// == 7-1 Prepare TableCfg Data                      ==
 	// == 7-2 Find CIS Address                           ==
 	// ====================================================
-	cout <<"STEP 7/10: FIND CIS BLOCK" <<endl;
+	cout <<"STEP 5/6: FIND CIS BLOCK" <<endl;
     CCISTool *tCistool = new CCISTool();
 
     CCISDL *tCisdl = new CCISDL(tCistool);
@@ -126,11 +126,11 @@ SKIP_SET_RT_ERASECOUNT:
 
 
     // ====================================================
-    // ==           STEP 8/10: BUILD eCIS BLOCK          ==
+    // ==           STEP 6/6: BUILD eCIS BLOCK          ==
     // ==                                                ==
     // ==  8-1 Build eCIS Block                          ==
     // ====================================================
-    cout <<"STEP 8/10: BUILD eCIS BLOCK" <<endl;
+    cout <<"STEP 6/6: BUILD eCIS BLOCK" <<endl;
     pmCIS->DownloadCIS(pmCurSettingConfgInfo,ptroottable);
 
     CloseMMCTest();
