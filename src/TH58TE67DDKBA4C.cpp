@@ -23,7 +23,7 @@ TH58TE67DDKBA4C::~TH58TE67DDKBA4C() {
 //--------------------------------------
 FlashStructure * TH58TE67DDKBA4C::CreatFlashStructure(SettingConfgInfo *pCurSettingConfgInfo) {
 	// TODO Auto-generated destructor stub
-	UINT   tFLH_ID[8] = {152,222,148,147,118,215,8,4};
+	UINT   tFLH_ID[8] = {152,222,148,147,118,80,8,4};
 	UINT PhysicalCapacity=0x200000;
 
 	memcpy( &pmFlashFwScheme->FLH_ID,&tFLH_ID,sizeof(UINT)*8);
@@ -53,9 +53,7 @@ FlashStructure * TH58TE67DDKBA4C::CreatFlashStructure(SettingConfgInfo *pCurSett
 	if(pmFlashFwScheme->Select_VB== 0)
 		pmFlashFwScheme->Select_VB= pCurSettingConfgInfo->ForceCH;			// 0x131
     //Capacity
-	PhysicalCapacity = PhysicalCapacity<<(pmFlashFwScheme->Model5 &0x0F);
-	PhysicalCapacity = PhysicalCapacity * (pCurSettingConfgInfo->ForceCE) * (pCurSettingConfgInfo->ForceCH);
-	pmFlashFwScheme->Capacity = PhysicalCapacity;
+
 	pmFlashStructure->FlashFwScheme = pmFlashFwScheme;
     //PlaneNum
 	pmFlashStructure->PlaneNum = 0x01 << ((pmFlashFwScheme->Model6 & 0x30) >> 4);
@@ -67,6 +65,10 @@ FlashStructure * TH58TE67DDKBA4C::CreatFlashStructure(SettingConfgInfo *pCurSett
 	pmFlashStructure->ChipSelectNum = pCurSettingConfgInfo->ForceCE;
 
 	pmFlashStructure->ChannelNum = pCurSettingConfgInfo->ForceCH;
+
+	PhysicalCapacity = PhysicalCapacity<<(pmFlashFwScheme->Model5 &0x0F);
+	PhysicalCapacity = PhysicalCapacity * (pmFlashStructure->ChipSelectNum) * (pmFlashStructure->ChannelNum);
+	pmFlashFwScheme->Capacity = PhysicalCapacity;
 
     //EntryItemNum
 	pmFlashStructure->EntryItemNum = getEntryItemNum(pmFlashFwScheme);

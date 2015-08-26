@@ -265,7 +265,6 @@ UINT CeMMCDriver::SpareAccessRead(BYTE MI_CMD, BYTE COLA1, BYTE COLA0, BYTE adap
 		BOOL status = 0;
 		ULONG length = 0, returned = 0;
 
-
 		memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
 		sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
 		sptwb.spt.PathId = adapter_id;

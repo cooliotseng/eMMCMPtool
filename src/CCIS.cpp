@@ -26,13 +26,15 @@ CCIS::CCIS(ICISDL *pCISDL,SettingConfgInfo *CurSettingConfgInfo,CFlash *pflash,C
 	UINT Status = false;
 	DWORD	dwBytesRead;
 	FILE	*VenFile;
+	BYTE 	tPageSEC;
+	UINT 	tBlockPage;
 	BYTE	ValueTmp=0;
 	TurboPageInfo *turbopageinfo = pflash->getTurboPageInfo();
-	BYTE tPageSEC = pmflash->getPageSEC();
-	UINT tBlockPage = pmflash->getBlockPage();
 
-	pmCISDL = pCISDL;
 	pmflash = pflash;
+	pmCISDL = pCISDL;
+	tPageSEC = pmflash->getPageSEC();
+	tBlockPage = pmflash->getBlockPage();
 	memset(Original_EraseCnt,0,sizeof(UINT)*4);
 
 	if( tPageSEC == 32)
@@ -228,11 +230,11 @@ UINT* CCIS::getCISBlocksAddr(SettingConfgInfo *CurSettingConfgInfo,CRootTable *r
 
 	CisIspTB.pBlockRec = new BlockRec[TableCfg.MaxVaildCISBlockFind*2];
 	CisIspTB.ItemNum = 0;
-//¦pªG¦³ÂÂªºcis table§ä¥X¥¦ªºAddress(eCISADDR)
+//ï¿½pï¿½Gï¿½ï¿½ï¿½Âªï¿½cis tableï¿½ï¿½Xï¿½ï¿½ï¿½ï¿½Address(eCISADDR)
 	if(!(CurSettingConfgInfo->TestProcedureMask & Proc_DisableCISDL)  &&
 		!(((RootTable[0].dwRTBLVersion & 0xFFFF0000) != 0x52540000)  &&
 			(pmflash->isOldVersionCISExit())))  //Sherlock_20131015, Get New CIS Address ,Special Function of Keep old CIS data For RE-MP ,Cody_20150217
-	{   //±qscan flash µ²ªG¤¤§ä¥Xªºgood block¤¤¬D¤@­Ó¥i¥H¥ÎªºCIS ADDRESS
+	{   //ï¿½qscan flash ï¿½ï¿½ï¿½Gï¿½ï¿½ï¿½ï¿½Xï¿½ï¿½good blockï¿½ï¿½ï¿½Dï¿½@ï¿½Ó¥iï¿½Hï¿½Îªï¿½CIS ADDRESS
 		Status = getGootlCISABlocksAddr(roottable->getUFDBlockMap(), &CisIspTB, &TableCfg);
 
 		for(index=0; index<TableCfg.MaxVaildCISBlockFind*2; index++) //Block 4,5,6,7 for eCIS Address
