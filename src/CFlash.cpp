@@ -31,9 +31,9 @@ CFlash::CFlash(IeMMCDriver *pDriver,FlashStructure *tFlashStructure) {
 	memcpy(pmFlashStructure,tFlashStructure,sizeof(FlashStructure));
 
 	if(pmFlashStructure->ForceCE!=0)
-		mChipSelectNum = pmFlashStructure->ForceCE;
+		mChipSelectNum = pmFlashStructure->ChipSelectNum;
 	if(pmFlashStructure->ForceCH!=0)
-		mChannelNum = pmFlashStructure->ForceCH;
+		mChannelNum = pmFlashStructure->ChannelNum;
 
 	mEntryItemNum = initEntryItemNum()/8;
 
@@ -295,8 +295,10 @@ UINT CFlash:: DownloadVDRFw(char *FWFileName) {
 		RegAdrOfs = 0;
 		while(RemainLen != 0) //  For Length > 256 Bytes
 		{
-			if(RemainLen > 0x100)	TxLen = 0x100;		// Write Reg Max 0x100 Bytes
-			else					TxLen = RemainLen;
+			if(RemainLen > 0x100)
+				TxLen = 0x100;		// Write Reg Max 0x100 Bytes
+			else
+				TxLen = RemainLen;
 
 			Status = writeData((ULONG)FunctionTblAdr[idx]+RegAdrOfs, (USHORT)TxLen, FunctionTblBuf+RegAdrOfs); // Write Reg
 			RemainLen -= TxLen;

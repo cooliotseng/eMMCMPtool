@@ -380,8 +380,8 @@ extern SettingConfgInfo * initCurSettingConfgInfo() {
     CurSettingConfgInfo->VenCIDFileName.assign("");
     CurSettingConfgInfo->VenCSDFileName.assign("");
     CurSettingConfgInfo->ExtCSDFileName.assign("extCSD.bin");
-    CurSettingConfgInfo->ForceCE = 2;
-	CurSettingConfgInfo->ForceCH = 2;
+    CurSettingConfgInfo->ForceCE = 4;
+	CurSettingConfgInfo->ForceCH = 1;
     CurSettingConfgInfo->SupportFlashIndex=4294967295;
     CurSettingConfgInfo->U2HUB_VIDPID=554248210;
     CurSettingConfgInfo->U3HUB_VIDPID=554240018;
