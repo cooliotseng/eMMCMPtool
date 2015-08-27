@@ -42,20 +42,6 @@ FlashStructure * TH58TE67DDJBA4C::CreatFlashStructure(SettingConfgInfo *pCurSett
 	pmFlashFwScheme->SelectPlane=2;
 	pmFlashFwScheme->PlaneBlock=1058;
 
-	if(pCurSettingConfgInfo->ForceCE!=0)
-		pmFlashFwScheme->SelectNO=pCurSettingConfgInfo->ForceCE;
-	if(pCurSettingConfgInfo->ForceCH!=0)
-		pmFlashFwScheme->ChannelNO=pCurSettingConfgInfo->ForceCH;
-	if(pmFlashFwScheme->InterleaveNO== 0)
-		pmFlashFwScheme->InterleaveNO = pCurSettingConfgInfo->ForceCE;		// 0x122
-	if(pmFlashFwScheme->VB_Block== 0)
-		pmFlashFwScheme->VB_Block= pCurSettingConfgInfo->ForceCE * pCurSettingConfgInfo->ForceCH;	// 0x130
-	if(pmFlashFwScheme->Select_VB== 0)
-		pmFlashFwScheme->Select_VB= pCurSettingConfgInfo->ForceCH;			// 0x131
-    //Capacity
-	PhysicalCapacity = PhysicalCapacity<<(pmFlashFwScheme->Model5 &0x0F);
-	PhysicalCapacity = PhysicalCapacity * (pCurSettingConfgInfo->ForceCE) * (pCurSettingConfgInfo->ForceCH);
-	pmFlashFwScheme->Capacity = PhysicalCapacity;
 	pmFlashStructure->FlashFwScheme = pmFlashFwScheme;
     //PlaneNum
 	pmFlashStructure->PlaneNum = 0x01 << ((pmFlashFwScheme->Model6 & 0x30) >> 4);

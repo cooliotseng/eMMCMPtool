@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stddef.h>
+#define FID_Chk_Len 		6
+#define MaxChipSelect 		4
+#define VT3468				0x3468	//Chip is VT3468
 CFlash::CFlash() {
 	// TODO Auto-generated constructor stub
 	pmDriver = NULL;
@@ -30,11 +33,17 @@ CFlash::CFlash(IeMMCDriver *pDriver,FlashStructure *tFlashStructure) {
 	moldversionCISflag = -1;
 	memcpy(pmFlashStructure,tFlashStructure,sizeof(FlashStructure));
 
-	if(pmFlashStructure->ForceCE!=0)
-		mChipSelectNum = pmFlashStructure->ChipSelectNum;
-	if(pmFlashStructure->ForceCH!=0)
-		mChannelNum = pmFlashStructure->ChannelNum;
-
+	initFlashInfo();
+	
+	if(pmFlashFwScheme->InterleaveNO== 0)
+		pmFlashFwScheme->InterleaveNO = pmFlashStructure->ForceCE;		// 0x122
+	
+	if(pmFlashFwScheme->VB_Block== 0)
+		pmFlashFwScheme->VB_Block= pmFlashStructure->ForceCE * pmFlashStructure->ForceCH;	// 0x130
+	
+	if(pmFlashFwScheme->Select_VB== 0)
+		pmFlashFwScheme->Select_VB= pmFlashStructure->ForceCH;			// 0x131
+    
 	mEntryItemNum = initEntryItemNum()/8;
 
 	Status=pmDriver->enableMPFunction();
@@ -46,6 +55,79 @@ CFlash::CFlash(IeMMCDriver *pDriver,FlashStructure *tFlashStructure) {
 CFlash::~CFlash() {
 	// TODO Auto-generated destructor stub
 }
+
+void CFlash::initFlashInfo(){
+	
+	BYTE CE=0, CH=1;
+	BYTE CE_Num=1;
+	INT  Entry=0x200, i, j, PseudoBlock = 0;
+	BYTE * buffer=new BYTE[64];
+	BYTE * F_ID=new BYTE[8];
+	UINT Status=0, PhysicalCapacity=0x200000;
+	BYTE CheckChip=true;
+	BYTE InternalChip = 1; // 3rd FID bit[1:0], Default is 1
+	BYTE	Plane = pmFlashFwScheme->SelectPlane;
+    BaseChipID = VT3468;
+	
+	Status=pmDriver->ReadFlashID(CE, buffer); // Sherlock_20140430, Patch 3493 ROM Code Bug
+	
+	if(Status == 0)
+	{	
+		goto EndCheckFlashInfo;
+	}
+	
+	memcpy(F_ID, buffer, 8); 
+	for(j=16;j<64;j+=16)
+	{
+		if(memcmp(F_ID, buffer+j, FID_Chk_Len)==0)
+			CH++;
+		else
+			break;
+	}
+
+	do{
+		CE++;    
+		if(CE>=MaxChipSelect)   
+			break;
+		Status=pmDriver->ReadFlashID(CE, buffer); //?CE?INDEX
+		if(!Status)  
+		{
+			continue; 
+		}
+		for(j=0;j<CH;j++)
+		{
+			if(memcmp(F_ID, buffer+(j*16), FID_Chk_Len)!=0)
+				break;
+		}
+		if(j==CH)
+			CE_Num++;   
+	}while(1);  
+	CE = CE_Num;
+	
+	if(pmFlashFwScheme->ForceCE!=0)
+		CE=pmFlashStructure->ForceCE;
+	if(pmFlashFwScheme->ForceCH!=0)
+		CH=pmFlashStructure->ForceCH;
+
+	if( (pmFlashStructure->ForceCE==0) && (pmFlashStructure->ForceCH==0) && (IndicateCapacity!=0))
+	{
+		//Capacity
+		PhysicalCapacity = PhysicalCapacity<<(pmFlashStructure->pmFlashFwScheme->Model5 &0x0F);
+		PhysicalCapacity = PhysicalCapacity * (pmFlashStructure->ChipSelectNum) * (pmFlashStructure->ChannelNum);
+		pmFlashStructure->pmFlashFwScheme->Capacity = PhysicalCapacity;
+	}
+
+	mChipSelectNum = CE;
+	mChannelNum = CH;
+	
+	// ----- Get Flash Type -----
+
+EndCheckFlashInfo:
+	delete buffer;
+	delete F_ID;
+}
+
+
 
 void CFlash:: setoldversionCISflag() {
 	moldversionCISflag = 1;
