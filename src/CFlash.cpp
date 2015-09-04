@@ -33,7 +33,7 @@ CFlash::CFlash(IeMMCDriver *pDriver,FlashStructure *tFlashStructure) {
 	moldversionCISflag = -1;
 	memcpy(pmFlashStructure,tFlashStructure,sizeof(FlashStructure));
 
-	initFlashInfo();
+	//initFlashInfo();
 	
 	if(pmFlashFwScheme->InterleaveNO== 0)
 		pmFlashFwScheme->InterleaveNO = pmFlashStructure->ForceCE;		// 0x122
@@ -67,7 +67,7 @@ void CFlash::initFlashInfo(){
 	BYTE CheckChip=true;
 	BYTE InternalChip = 1; // 3rd FID bit[1:0], Default is 1
 	BYTE	Plane = pmFlashFwScheme->SelectPlane;
-    BaseChipID = VT3468;
+    //BaseChipID = VT3468;
 	
 	Status=pmDriver->ReadFlashID(CE, buffer); // Sherlock_20140430, Patch 3493 ROM Code Bug
 	
@@ -104,17 +104,17 @@ void CFlash::initFlashInfo(){
 	}while(1);  
 	CE = CE_Num;
 	
-	if(pmFlashFwScheme->ForceCE!=0)
+	if(pmFlashStructure->ForceCE!=0)
 		CE=pmFlashStructure->ForceCE;
-	if(pmFlashFwScheme->ForceCH!=0)
+	if(pmFlashStructure->ForceCH!=0)
 		CH=pmFlashStructure->ForceCH;
 
-	if( (pmFlashStructure->ForceCE==0) && (pmFlashStructure->ForceCH==0) && (IndicateCapacity!=0))
+	if( (pmFlashStructure->ForceCE==0) && (pmFlashStructure->ForceCH==0))
 	{
 		//Capacity
-		PhysicalCapacity = PhysicalCapacity<<(pmFlashStructure->pmFlashFwScheme->Model5 &0x0F);
+		PhysicalCapacity = PhysicalCapacity<<(pmFlashStructure->FlashFwScheme->Model5 &0x0F);
 		PhysicalCapacity = PhysicalCapacity * (pmFlashStructure->ChipSelectNum) * (pmFlashStructure->ChannelNum);
-		pmFlashStructure->pmFlashFwScheme->Capacity = PhysicalCapacity;
+		pmFlashStructure->FlashFwScheme->Capacity = PhysicalCapacity;
 	}
 
 	mChipSelectNum = CE;
@@ -273,15 +273,23 @@ UINT CFlash::setFlashSize() {
 	if(!Status)
 		return Status;
 
-	if(mBlockPage == 64) 			Register3 = (Register2 & (0xFC)) + 0; //(~(bit_1|bit_0))
-	else if(mBlockPage == 128)		Register3 = (Register2 & (0xFC)) + 1; // Set bit_0
-	else if(mBlockPage == 256)		Register3 = (Register2 & (0xFC)) + 2; // Set bit_1
-	else if(mBlockPage == 512)		Register3 = (Register2 & (0xFC)) + 3; // Set bit_1|bit_0
-	else							Register3 = Register2;				// No Match, No Change
+	if(mBlockPage == 64)
+		Register3 = (Register2 & (0xFC)) + 0; //(~(bit_1|bit_0))
+	else if(mBlockPage == 128)
+		Register3 = (Register2 & (0xFC)) + 1; // Set bit_0
+	else if(mBlockPage == 256)
+		Register3 = (Register2 & (0xFC)) + 2; // Set bit_1
+	else if(mBlockPage == 512)
+		Register3 = (Register2 & (0xFC)) + 3; // Set bit_1|bit_0
+	else
+		Register3 = Register2;				// No Match, No Change
 
-	if(mPageSize == 16*1024) 	Register3 = (Register3 & (0xF3)) + 0; // [3:2] = 00b
-	else if(mPageSize == 4*1024) Register3 = (Register3 & (0xF3)) + 4; // [3:2] = 01b
-	else if(mPageSize == 8*1024) Register3 = (Register3 & (0xF3)) + 8; // [3:2] = 10b
+	if(mPageSize == 16*1024)
+		Register3 = (Register3 & (0xF3)) + 0; // [3:2] = 00b
+	else if(mPageSize == 4*1024)
+		Register3 = (Register3 & (0xF3)) + 4; // [3:2] = 01b
+	else if(mPageSize == 8*1024)
+		Register3 = (Register3 & (0xF3)) + 8; // [3:2] = 10b
 
 	Status = writeData(Reg_FlashAccess, 1, &Register3);
 	if(!Status)
@@ -1371,7 +1379,7 @@ UINT CFlash::isOldVersionCISExit(){
 
         if (moldversionCISflag == -1){
         	moldversionCISflag = 0;
-			for(index=0; index<100; index++){ // Search 100 Blocks for CIS Block
+			for(index=0; index<50; index++){ // Search 100 Blocks for CIS Block
 				Address = index * pmFlashStructure->FlashFwScheme->BlockPage;
 				TempStatus = ReadSpareData(0, 0, Address, 6, SpareBuf);
 				if((TempStatus) && (SpareBuf[0] == 0x43) && (SpareBuf[1] == 0x53)){

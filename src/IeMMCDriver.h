@@ -35,6 +35,7 @@ public:
 	virtual UINT SetInfoWriteCMD(BYTE adapter_id, BYTE target_id, VendorCMD VCMD, BYTE *buffer) = 0;
 	virtual UINT UFDSettingWrite(BYTE MI_CMD, BYTE CFG0, BYTE adapter_id, BYTE target_id,ULONG Address, USHORT BufLen, BYTE *buffer) = 0;
 	virtual UINT SendTestUnitReady(BYTE Lun, BYTE adapter_id, BYTE target_id, BYTE *pScsiStatus) = 0;
+	virtual UINT ReadFlashID(BYTE CE,BYTE *buffer) = 0;
 
 };
 

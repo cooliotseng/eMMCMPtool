@@ -39,6 +39,7 @@ public:
 	UINT SetInfoWriteCMD(BYTE adapter_id, BYTE target_id, VendorCMD VCMD, BYTE *buffer);
 	UINT UFDSettingWrite(BYTE MI_CMD, BYTE CFG0, BYTE adapter_id, BYTE target_id,ULONG Address, USHORT BufLen, BYTE *buffer);
 	UINT SendTestUnitReady(BYTE Lun, BYTE adapter_id, BYTE target_id, BYTE *pScsiStatus);
+	UINT ReadFlashID(BYTE CE,BYTE *buffer);
 };
 
 #endif /* CEMMCDRIVER_H_ */

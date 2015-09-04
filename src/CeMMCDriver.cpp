@@ -1060,7 +1060,7 @@ UINT CeMMCDriver::SendTestUnitReady(BYTE Lun, BYTE adapter_id, BYTE target_id, B
 {
 	cout<<" SendTestUnitReady()"<<endl;
     SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-    BOOL status = 0;
+    UINT status = 0;
     ULONG length = 0, returned = 0;
 
     memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
@@ -1090,11 +1090,12 @@ UINT CeMMCDriver::SendTestUnitReady(BYTE Lun, BYTE adapter_id, BYTE target_id, B
 											PACK_EMMC,
 											ACCESS_READ_INFO,
 											UNPACK_DATA);
+	return status;
+}
 
-	if ( (status) )//&& (!sptwb.spt.ScsiStatus) )
-	{
-		return true;
-	}
-	else
-	    return false;
+UINT CeMMCDriver::ReadFlashID(BYTE CE,BYTE *buffer)
+{
+	UINT status = 0;
+
+	return status;
 }
