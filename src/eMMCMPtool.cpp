@@ -83,7 +83,7 @@ int main() {
 
     status = pmflash->writeTPMT();
 
-    ptroottable = new CRootTable(pmflash);
+    ptroottable = (CRootTable *)new CRootTable(pmflash);
 
     ptroottable->updateEraseCount();
 
@@ -96,7 +96,7 @@ SKIP_SET_RT_ERASECOUNT:
 	// == 5-2 Scan Flash Block                           ==
 	// ====================================================
 	cout <<" STEP 4/6: SCAN FLASH  " <<endl;
-	if(pmflash->isOldVersionCISExit()){
+	//if(pmflash->isOldVersionCISExit()){
 
 		status = ptroottable->writeCellMap();
 		status = ptroottable->writeEccMap();
@@ -109,7 +109,8 @@ SKIP_SET_RT_ERASECOUNT:
 	    	return status ;
 	    }
 	    status = ptroottable->setSystemBlock(pmflash);
-  	 }
+	    status = ptroottable->setEccErrBlock(pmflash);
+  	 //}
 
 	// ====================================================
 	// ==           STEP 5/6: FIND CIS BLOCK            ==

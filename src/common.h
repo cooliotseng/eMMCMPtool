@@ -331,6 +331,7 @@ typedef struct _MapChipSelect
 	INT		EntryItemNum; // HIWORD: Extended Block (From LessBlock), LOWORD: Entry
 	UINT	BadBlockCnt[MaxChipSelectNo*MaxChannelNo];
 	UINT	SysBlkAdr[3076];	// Sherlock_20140730 #if(eMMC_CFG_A2CMD == 1), Reserve Last 4 UINT For Future Use
+	UINT	EccErrBlkAdr[512];	//Cody 20150225
 	LPMapChannel CEItem[MaxChipSelectNo];
 }MapChipSelect, *LPMapChipSelect;
 
@@ -673,6 +674,9 @@ typedef struct _SCSI_PASS_THROUGH_WITH_BUFFERS {
 #define		FT_2Plane		0x0002
 #define		FT_4Plane		0x0004
 
+
+
+
 #define Samsung_M_2P		(FT_Samsung|			FT_MLC|FT_2Plane)	// = 0x1022
 #define Samsung_M_4P		(FT_Samsung|			FT_MLC|FT_4Plane)	// = 0x1024
 #define Samsung_T_2P		(FT_Samsung|			FT_TLC|FT_2Plane)	// = 0x1032
@@ -897,3 +901,6 @@ const BYTE WriteCMD_TSB_2P[14] = {0x02,0x1B,0x80,0x5,0x11,0x0,0x0,0x0,0x81,0x5,0
 #define SCSI_SEND_DIAG	0x1D		// Send Diagnostic (O)
 #define SCSI_TST_U_RDY	0x00		// Test Unit Ready (MANDATORY)
 #define SCSI_WRITE_BUFF	0x3B		// Write Buffer (O)
+
+
+

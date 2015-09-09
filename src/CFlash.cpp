@@ -520,8 +520,8 @@ UINT CFlash::writeTPMT() {
 
 		DataH = HIBYTE(pmFlashStructure->turbopageinfo->TurboPageNUM);
 		DataL = LOBYTE(pmFlashStructure->turbopageinfo->TurboPageNUM);
-		Status = writeData( 0x1FF840A0, 1, &DataL); // Little End
-		Status = writeData(0x1FF840A1, 1, &DataH);
+		Status = writeData(0x1FF840A4, 1, &DataL); // Little End
+		Status = writeData(0x1FF840A5, 1, &DataH);
 
 		for(Index=0; Index<pmFlashStructure->turbopageinfo->TurboPageNUM; Index++)
 		{
@@ -1379,7 +1379,7 @@ UINT CFlash::isOldVersionCISExit(){
 
         if (moldversionCISflag == -1){
         	moldversionCISflag = 0;
-			for(index=0; index<50; index++){ // Search 100 Blocks for CIS Block
+			for(index=0; index<100; index++){ // Search 100 Blocks for CIS Block
 				Address = index * pmFlashStructure->FlashFwScheme->BlockPage;
 				TempStatus = ReadSpareData(0, 0, Address, 6, SpareBuf);
 				if((TempStatus) && (SpareBuf[0] == 0x43) && (SpareBuf[1] == 0x53)){

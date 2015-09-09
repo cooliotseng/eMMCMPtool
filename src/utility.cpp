@@ -356,7 +356,7 @@ extern SettingConfgInfo * initCurSettingConfgInfo() {
 
 	SettingConfgInfo *CurSettingConfgInfo= new SettingConfgInfo();
 
-	CurSettingConfgInfo->FWFileName.assign("TSH_7DDK_2CE_CMD60.bin");
+	CurSettingConfgInfo->FWFileName.assign("FW_CODE_RELEASE_20150810_1.bin");
     CurSettingConfgInfo->USB_VID.assign("0BDA");
     CurSettingConfgInfo->USB_PID.assign("0307");
     CurSettingConfgInfo->HUB_VID.assign("2109");
@@ -376,7 +376,7 @@ extern SettingConfgInfo * initCurSettingConfgInfo() {
     CurSettingConfgInfo->TargetStoreMedia=2;
     CurSettingConfgInfo->LunTypeBitMap = 2420113489;
     CurSettingConfgInfo->LunTypeBitMap2=24;
-    CurSettingConfgInfo->BootCodeFileName.assign("TSH_7DDK_2CE_CMD60.bin");
+    CurSettingConfgInfo->BootCodeFileName.assign("FW_CODE_RELEASE_20150810_1.bin");
     CurSettingConfgInfo->VenCIDFileName.assign("");
     CurSettingConfgInfo->VenCSDFileName.assign("");
     CurSettingConfgInfo->ExtCSDFileName.assign("extCSD.bin");

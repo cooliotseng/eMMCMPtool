@@ -794,7 +794,7 @@ UINT CeMMCDriver::sendGetCommand(VendorCMD VCMD, BYTE *buffer) {
 											sptwb.spt.DataTransferLength,//VCMD.BufLen, Sherlock_20140710
 											buffer,
 											PACK_EMMC,
-											ACCESS_READ_DATA,
+											ACCESS_READ_INFO,
 											UNPACK_DATA);
 
 		return status;
