@@ -1404,26 +1404,111 @@ UINT CFlash::getOldVersionCISAddress(UINT *CISADDR){
 		BYTE	index, CISIdx=0, SpareBuf[6] = {0,0,0,0,0,0};
 		BYTE PlaneNum;
 		PlaneNum = 0x01 << ((pmFlashStructure->FlashFwScheme->Model6 & 0x30) >> 4);
+		UINT 	Status = Fail_State;
+		ULONG	EachTxSize = 512;
+		BYTE	BufferLen;
+		BYTE	ECC ,RetryCnt;
+		BYTE	TxDataBuf[13];
+		eMMC_CIS_INFO	eCISSetData;
+		SPARETYPE Spare;
 
-        if (moldversionCISflag == -1){
-        	moldversionCISflag = 0;
-			for(index=0; index<100; index++){ // Search 100 Blocks for CIS Block
-				Address = index * pmFlashStructure->FlashFwScheme->BlockPage;
-				TempStatus = ReadSpareData(0, 0, Address, 6, SpareBuf);
-				if((TempStatus) && (SpareBuf[0] == 0x43) && (SpareBuf[1] == 0x53)){
+		Spare.SPARE0=0x43; //'C'
+		Spare.SPARE1=0x53; //'S'
+		Spare.SPARE2=0x00; //Initial Value
+		Spare.SPARE3=0x00; //Initial Value
+		Spare.SPARE4=0x99;
+		Spare.SPARE5=0x99;
+
+		//if(PlaneNum == 2)
+		BufferLen = 13;
+
+		memset(TxDataBuf, 0,BufferLen);
+		writeData(0x1FF85000, (USHORT)BufferLen, TxDataBuf);//SLC
+		ECC = 2 + BIT5 + BIT7; //60 bit + SLC +  Encryption on
+		for(index=0; index<100; index++) // Search 100 Blocks for CIS Block
+		{
+			Address = index * mBlockPage;
+			TempStatus = ReadSpareData(0xA0, 0, Address, 6, SpareBuf);
+			if((TempStatus) && (SpareBuf[0] == 0x43) && (SpareBuf[1] == 0x53))
+			{
+				for(RetryCnt=0; RetryCnt<3; RetryCnt++)
+				{
+					Status=readBlockData(	(BYTE)(EachTxSize/512),
+											ECC,
+											Spare,
+											Address,
+											EachTxSize,
+											(BYTE *)&eCISSetData);
+					if(Status)
+						break;
+				}
+
+				if(!Status)
+					continue;
+				if(eCISSetData.PAGE_MODE == 1)
+				{
 					CISADDR[CISIdx] = Address;
 					CISIdx++;
 					moldversionCISflag = Success_State; // At Least Find 1 CIS Block
+					mCisBlkPgeMode = 1; //SLC mode
 				}
 
-				if (CISIdx >= (PlaneNum*2)){
+			}
+
+			if (CISIdx >= (PlaneNum * 2))
+			{
+				break;
+			}
+		}
+
+		if(CISIdx == 0)
+		{
+			memset(TxDataBuf, 1, BufferLen);
+			writeData(0x1FF85000, (USHORT)BufferLen, TxDataBuf);//MLC
+			ECC = 2 + BIT7; //60 bit + MLC +  Encryption on
+			for(index=0; index<100; index++) // Search 100 Blocks for CIS Block
+			{
+				Address = index * pmFlashStructure->BlockPage;
+				TempStatus = ReadSpareData(0x80, 0, Address, 6, SpareBuf);
+				if((TempStatus) && (SpareBuf[0] == 0x43) && (SpareBuf[1] == 0x53))
+				{
+					for(RetryCnt=0; RetryCnt<3; RetryCnt++)
+					{
+						Status=readBlockData(	(BYTE)(EachTxSize/512),
+												ECC,
+												Spare,
+												Address,
+												EachTxSize,
+												(BYTE *)&eCISSetData);
+						if(Status)
+							break;
+					}
+
+					if(!Status)
+						continue;
+					if(eCISSetData.PAGE_MODE == 0)
+					{
+						CISADDR[CISIdx] = Address;
+						CISIdx++;
+						moldversionCISflag = Success_State; // At Least Find 1 CIS Block
+						mCisBlkPgeMode = 0; //MLC mode
+					}
+
+				}
+
+				if (CISIdx >= (PlaneNum * 2))
+				{
 					break;
 				}
 			}
 
-        }
-
+		}
         return moldversionCISflag;
+}
+
+BYTE CFlash::getCisBlkPgeMode(void){
+
+	return mCisBlkPgeMode;
 }
 
 UINT CFlash::UFDSettingRead(BYTE MI_CMD, BYTE CFG0, BYTE adapter_id, BYTE target_id,ULONG Address, USHORT BufLen, BYTE *buffer){
@@ -1510,3 +1595,35 @@ UINT CFlash::INITISP(ULONG AddrOffset, USHORT BufLen, BYTE *buffer) {
 
 	return Status;
 }
+
+UINT CFlash::BlockMarkWrite(BYTE MI_CMD, BYTE adapter_id, BYTE target_id, ULONG Address, USHORT BufLen, BYTE LEN0, BYTE CFG0, BYTE CFG1, BYTE *buffer){
+	// TODO Auto-generated constructor stub
+	return pmDriver->BlockMarkWrite(MI_CMD,adapter_id,target_id,Address,BufLen,LEN0,CFG0,CFG1,buffer);
+}
+UINT CFlash::CopySLCtoTLC(BYTE MI_CMD, BYTE CE, BYTE CH, WORD BlockAddr, BYTE Mode, WORD LunOffset){
+	// TODO Auto-generated constructor stub
+	return pmDriver->CopySLCtoTLC(MI_CMD, CE, CH, BlockAddr, Mode, LunOffset);
+}
+UINT CFlash::MLCVBWrite(BYTE MI_CMD, WORD BlockAddr, WORD LunOffset){
+	// TODO Auto-generated constructor stub
+	return pmDriver->MLCVBWrite(MI_CMD, BlockAddr,LunOffset);
+}
+UINT CFlash::FillMainFIFO(BYTE MI_CMD, ULONG BufLen, BYTE *buffer){
+	// TODO Auto-generated constructor stub
+	return pmDriver->FillMainFIFO(MI_CMD, BufLen,buffer);
+}
+
+UINT CFlash::BlockCheckECC(BYTE MI_CMD, BYTE CE, BYTE CH, WORD BlockAddr, BYTE Mode, USHORT BufLen, BYTE *buffer){
+	// TODO Auto-generated constructor stub
+	return pmDriver->BlockCheckECC(MI_CMD, CE, CH, BlockAddr, Mode, BufLen, buffer);
+}
+
+UINT CFlash::SetThreeSLCVB(BYTE MI_CMD){
+	// TODO Auto-generated constructor stub
+	return pmDriver->SetThreeSLCVB(MI_CMD);
+}
+UINT CFlash::SpareAccessRead(BYTE MI_CMD, BYTE COLA1, BYTE COLA0, BYTE adapter_id, BYTE target_id, USHORT BlockPage, ULONG Address, USHORT BufLen, BYTE *buffer){
+
+	return pmDriver->SpareAccessRead(MI_CMD,COLA1,COLA0,adapter_id,target_id,BlockPage,Address,BufLen,buffer);
+}
+

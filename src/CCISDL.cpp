@@ -21,10 +21,9 @@ CCISDL::~CCISDL() {
 UINT CCISDL::Execute(	SettingConfgInfo *pCurSettingConfgInfo,
 						CFlash			*pflash,
 						CRootTable		*pRootTable,
-						eMMC_CIS_INFO *pCISInfo,
+						eMMC_CIS_INFO 	*pCISInfo,
 						UINT 			*eCISADDR,
 						UINT			*Original_EraseCnt,
-						UINT 			OldCISVersionExit,
 						UINT			Terminate){
 
 	UINT	Status=Success_State, BitErrorCnt=0, ErrorBitLimt;
@@ -41,7 +40,7 @@ UINT CCISDL::Execute(	SettingConfgInfo *pCurSettingConfgInfo,
 	BYTE	*RTDataBuf;
 	BYTE	BackUpRTNum = 0, Num;						// RT Numbers
 	ULONG	RTPageIdxOfs, EachRTSize = 14*1024;			// RT Size in One Page is 14K
-
+	UINT 	OldCISVersionExit = pflash->isOldVersionCISExit();
 	if(pflash->getPlaneNum() == 1)
 		CISBlockNum = 2; // if 1 Plane, write 2 CIS Block
 	else

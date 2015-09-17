@@ -7,7 +7,7 @@ using namespace std;
 #define BOOL bool
 #define BYTE unsigned char
 #define UINT unsigned int
-#define USHORT unsigned int
+#define USHORT unsigned short
 #define ULONG unsigned long
 #define UCHAR unsigned char
 #define INT  int
@@ -270,7 +270,10 @@ typedef struct _eMMC_CIS_INFO
 	BYTE	FLH_INFO;		// 000D
 	BYTE	FW_PAGE;		// 000E
 	BYTE	CIS_PAGE;		// 000F
-	BYTE	Reserved0[16];	// 0010-001F
+	BYTE	PAGE_MODE;		// 000F
+	BYTE	PreMP_MODE;		// 000F
+	BYTE	Sorting_MODE;		// 000F
+	BYTE	Reserved0[13];	// 0010-001F
 	BYTE	PRE_LOAD_DATA;	// 0x20
 	BYTE	CIS_Version;		// 0x21
 	BYTE	EACH_PAGE;			// 0022
@@ -284,8 +287,9 @@ typedef struct _eMMC_CIS_INFO
 	BYTE	Reserved8[16];	// 0080-008F
 	BYTE	Reserved9[16];	// 0090-009F
 	BYTE	Reserved10[16];	// 00A0-00AF
-	BYTE	Reserved11[16];	// 00B0-00BF
-	BYTE	Reserved12[16];	// 00C0-00CF
+
+	UINT    TotalMlcEraCnt[4];
+	UINT    TotalSlcEraCnt[4];
 	UINT	CIS_RowAddr[4];	// 00D0-00DF
 	USHORT	TurboPage[256];	// 00E0-02DF
 	BYTE	CID[16];			// 02E0 -02EF
@@ -796,8 +800,8 @@ const BYTE WriteCMD_TSB_2P[14] = {0x02,0x1B,0x80,0x5,0x11,0x0,0x0,0x0,0x81,0x5,0
 #define ForceFstTBBuild		BIT29
 #define ClearSysBlock		BIT28
 #define ScanBlockOnly		BIT27
-#define DumpDebugMemory	BIT26
-#define PublicLunOnly			BIT25
+#define DumpDebugMemory		BIT26
+#define PublicLunOnly		BIT25
 #define HDDPowrEanble		BIT24
 #define SSCEnable			BIT23
 #define ForceSecTBBuild		BIT22
@@ -902,5 +906,30 @@ const BYTE WriteCMD_TSB_2P[14] = {0x02,0x1B,0x80,0x5,0x11,0x0,0x0,0x0,0x81,0x5,0
 #define SCSI_TST_U_RDY	0x00		// Test Unit Ready (MANDATORY)
 #define SCSI_WRITE_BUFF	0x3B		// Write Buffer (O)
 
+#define VDR_SORTING			0xF8
+#define MI_SORT_READECC		0x80
+#define MI_SORT_Set3SLCVB	0x82
+#define MI_SORT_COPYTLC		0x84
+#define MI_SORT_FillFIFO	0x86
+#define MI_SORT_COPYMLC		0x88
 
+// Use in TestProcedureMask
+#define	Proc_BuildSysTbl	0x01	// Bit_0
+#define	Proc_CleanMPInfo	0x02	// Bit_1
+#define	Proc_DisableCISDL	0x04	// Bit_2
+#define	Proc_DisableReset	0x08	// Bit_3, Original_Format
+#define	Proc_StressTest		0x10	// Bit_4
+
+#define	Proc_HubTestOnly	0x100	// Bit_8
+#define	Proc_DLVDROnly		0x200	// Bit_9
+#define	Proc_ReStartFWOnly	0x400	// Bit_10
+#define	Proc_SLCPageMode	0x800 // Bit_11
+
+
+//Use in LunTypeBitMap
+
+#define SortingFW			BIT19 //0:disable  1:enable sorting FW
+#define PreMPFWWait1Sec	BIT18
+#define PreMPFW			BIT17
+#define NormalFW			BIT16
 

@@ -519,7 +519,8 @@ UINT CRootTable::ScanBlock(SettingConfgInfo *pmCurSettingConfgInfo) {
 	UINT	BasicBlock;
 	UINT	Lun1End, Lun2Start, Lun2End, Lun3Start; // 2 Internal Chip Use, Lun1Start = 0
 	UINT	Lun3End, Lun4Start, Lun4End, Lun5Start; // 4 Internal Chip Use
-	UINT	EraseCount=0, SysBlkCnt=0,EccErrBlkCnt = 0;
+	UINT	SysBlkCnt=0,EccErrBlkCnt = 0;
+	USHORT	EraseCount=0;
 	UINT 	m_BlockPage;
 	UINT	m_PageSize;
 	UINT	LastPage,Status = 1;
@@ -854,7 +855,7 @@ JudgeBlock:
 						ErrorCnt=0;
 ReSendEraseSysBlock:
 
-						UINT	TempEraseCount = 0;
+						USHORT	TempEraseCount = 0;
 						SPARETYPE Spare;
 						Spare.SPARE0=0x4D; //'M'
 						Spare.SPARE1=0x50; //'P'
@@ -1137,12 +1138,6 @@ EndScanFlashBlock:	//Sherlock_20110504, Add Exit
 		if(Status) // Only Write if Scan Success
 			Status1 = pmflash->WriteBadBlockInfoToFlash(&BadBlockInfo, SaveBBInfoAddr, PageIdx, ECCSet, EraseCount);
 	}
-//////////////////////////
-	/*
-	Status = pmflash->ScanBlock(pmUFDBlockMap,Config);
-
-	setUFDBlockMap(pmUFDBlockMap);
-*/
 	return Status;
 }
 
@@ -1172,6 +1167,12 @@ BYTE CRootTable::getMapEntryItem(INT EntryItemIndex, BYTE BlockItemIndex) {
 		}
 		return 0xFF;
 }
+
+BYTE CRootTable::GetUFDBlockMapByByte(BYTE CEIndex, BYTE ChannelIndex, INT EntryItemIndex)
+{
+	return ((LPMapEntryItem)pmUFDBlockMap->CEItem[CEIndex]->ChannelItem[ChannelIndex])[EntryItemIndex].MapToByte;
+}
+
 
 void CRootTable::setMapEntryItem(BYTE CEIndex, BYTE ChannelIndex,INT EntryItemIndex, BYTE BlockItemIndex, BYTE Value) {
 	// TODO Auto-generated constructor stub

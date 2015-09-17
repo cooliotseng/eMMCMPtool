@@ -42,6 +42,7 @@ public:
 	BYTE getMapEntryItem(INT EntryItemIndex, BYTE BlockItemIndex);
 	UINT EraseAllBlock();
 	MapChipSelect *AllocateBlockMapMemory();
+	BYTE GetUFDBlockMapByByte(BYTE CEIndex, BYTE ChannelIndex, INT EntryItemIndex);
 
 };
 

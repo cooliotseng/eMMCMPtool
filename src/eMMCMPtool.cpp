@@ -123,7 +123,7 @@ SKIP_SET_RT_ERASECOUNT:
 
     CCISDL *tCisdl = new CCISDL(tCistool);
 
-    pmCIS = new CCIS(tCisdl,pmCurSettingConfgInfo,pmflash,ptroottable,1024);
+    pmCIS = new CCIS(ptroottable,tCisdl,pmCurSettingConfgInfo,pmflash,ptroottable,1024);
 
 
     // ====================================================
