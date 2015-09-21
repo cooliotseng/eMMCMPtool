@@ -1166,54 +1166,9 @@ UINT CFlash::WriteSpareData(BYTE COLA1, BYTE COLA0, ULONG Address, USHORT BufLen
 
 UINT CFlash::EraseBlock(ULONG Address, BYTE *buffer){
 
-	//	OutputDebugString(" BlockOtherRead()");
-		SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-		BOOL status = 0;
-		ULONG length = 0;
-
-	//	DWORD dwError;
-		BYTE MI_CMD = MI_BLOCK_ERASE;
-		memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
-
-		sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
-		sptwb.spt.PathId = 0;
-		sptwb.spt.TargetId = 0;
-		sptwb.spt.Lun = 0;
-		sptwb.spt.CdbLength = 16;
-		sptwb.spt.SenseInfoLength = 24;
-		sptwb.spt.DataIn = SCSI_IOCTL_DATA_IN;
-		sptwb.spt.DataTransferLength = 1;
-		sptwb.spt.TimeOutValue = 3;
-		sptwb.spt.DataBufferOffset =
-	   			offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf);
-		sptwb.spt.SenseInfoOffset =
-	      		offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucSenseBuf);
-
-		sptwb.spt.Cdb[0] = SCSI_VLIVENDOR;
-		sptwb.spt.Cdb[1] = VDR_BLOCK_OTHER;
-
-		sptwb.spt.Cdb[2] = HIBYTE(HIWORD(Address));
-		sptwb.spt.Cdb[3] = LOBYTE(HIWORD(Address));
-		sptwb.spt.Cdb[4] = HIBYTE(LOWORD(Address));
-		sptwb.spt.Cdb[5] = LOBYTE(LOWORD(Address));
-
-		sptwb.spt.Cdb[6] = MI_CMD;
-
-		sptwb.spt.ScsiStatus = 1;	 // Sherlock_20121130, Add SCSI Protection For Multi-Device
-
-		length = offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf) +
-				sptwb.spt.DataTransferLength;
-/*
-		status = pCeMMCDeviceIO->SendPackageCmd(DiskPath,
-												&sptwb,
-												offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf),
-												Address,
-												BufLen,
-												buffer,
-												PACK_SCSI,
-												ACCESS_CONTROL,
-												UNPACK_REG1BYTE); // UNPACK_STATUS); Sherlock_20140812, Result Status From Byte[26]     */
-		return status;
+	UINT	Status = Fail_State;
+	Status=pmDriver->BlockOtherRead(MI_BLOCK_ERASE, 0, 0, Address, 1, buffer);
+	return Status;
 
 }
 

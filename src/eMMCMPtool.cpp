@@ -11,6 +11,7 @@
 #include "CeMMC.h"
 #include "CCISTool.h"
 #include "CCISDL.h"
+#include "CCISDLD0.h"
 #include "CCIS.h"
 #include "CFlashsimplefactory.h"
 
@@ -119,9 +120,12 @@ SKIP_SET_RT_ERASECOUNT:
 	// == 7-2 Find CIS Address                           ==
 	// ====================================================
 	cout <<"STEP 5/6: FIND CIS BLOCK" <<endl;
-    CCISTool *tCistool = new CCISTool();
+	CCISTool *tCistool = new CCISTool();
 
-    CCISDL *tCisdl = new CCISDL(tCistool);
+    //CCISDL *tCisdl = new CCISDL(tCistool);
+
+	CCISDLD0 *tCisdl = new CCISDLD0(tCistool);
+
 
     pmCIS = new CCIS(ptroottable,tCisdl,pmCurSettingConfgInfo,pmflash,ptroottable,1024);
 
@@ -132,8 +136,8 @@ SKIP_SET_RT_ERASECOUNT:
     // ==  8-1 Build eCIS Block                          ==
     // ====================================================
     cout <<"STEP 6/6: BUILD eCIS BLOCK" <<endl;
-    pmCIS->DownloadCIS(pmCurSettingConfgInfo,ptroottable);
 
+    pmCIS->DownloadCIS(pmCurSettingConfgInfo,ptroottable);
     CloseMMCTest();
     cout <<"end MP process" <<endl;
 	return 0;

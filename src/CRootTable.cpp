@@ -1142,10 +1142,10 @@ EndScanFlashBlock:	//Sherlock_20110504, Add Exit
 }
 
 
-BYTE CRootTable::getMapEntryItem(INT EntryItemIndex, BYTE BlockItemIndex) {
+BYTE CRootTable::getMapEntryItem(BYTE CEIndex, BYTE ChannelIndex,INT EntryItemIndex, BYTE BlockItemIndex) {
 	// TODO Auto-generated constructor stub
-	BYTE CEIndex = pmflash->getChipSelectNum();
-	BYTE ChannelIndex = pmflash->getChannelNum();
+	//BYTE CEIndex = pmflash->getChipSelectNum();
+	//BYTE ChannelIndex = pmflash->getChannelNum();
 	switch(BlockItemIndex)
 		{
 		case 0:

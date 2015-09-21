@@ -39,7 +39,7 @@ public:
 	UINT writeEccMap();
 	UINT ScanBlock(SettingConfgInfo *pmCurSettingConfgInfo);
 	void setMapEntryItem(BYTE CEIndex, BYTE ChannelIndex,INT EntryItemIndex, BYTE BlockItemIndex, BYTE Value);
-	BYTE getMapEntryItem(INT EntryItemIndex, BYTE BlockItemIndex);
+	BYTE getMapEntryItem(BYTE CEIndex, BYTE ChannelIndex,INT EntryItemIndex, BYTE BlockItemIndex);
 	UINT EraseAllBlock();
 	MapChipSelect *AllocateBlockMapMemory();
 	BYTE GetUFDBlockMapByByte(BYTE CEIndex, BYTE ChannelIndex, INT EntryItemIndex);

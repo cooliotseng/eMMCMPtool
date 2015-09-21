@@ -26,7 +26,7 @@ UINT CCISDLD0::Execute(	SettingConfgInfo *pCurSettingConfgInfo,
 						UINT 			*eCISADDR,
 						UINT			*Original_EraseCnt,
 						UINT			Terminate){
-
+	    BYTE	TxDataBuf_Array[270336], RxDataBuf_Array[270336];
 		UINT	Status=Success_State, BitErrorCnt=0, ErrorBitLimt;
 	//	TotalCIS_INFO	CISSetData;//, CISSetDataTmp;
 		eMMC_CIS_INFO	eCISSetData, eCISBackData; //eCISPairMap; Cody_20150216
@@ -37,7 +37,11 @@ UINT CCISDLD0::Execute(	SettingConfgInfo *pCurSettingConfgInfo,
 		int		i, j, CISBlockNum, pln,index;
 		USHORT	TurboPage[256], TurboPage_NUM, TurboPage_Type;
 		BYTE	CheckSumStatus = false;
+		MapChipSelect *ptUFDBlockMap;
+		Status = pflash->setMultiPageAccress();
+
 		UINT 	OldCISVersionExit = pflash->isOldVersionCISExit();
+
 		if(pCurSettingConfgInfo->PlaneNum == 1)
 			CISBlockNum = 2; // if 1 Plane, write 2 CIS Block
 		else
@@ -56,6 +60,7 @@ UINT CCISDLD0::Execute(	SettingConfgInfo *pCurSettingConfgInfo,
 		ULONG	ISPIdx, PageAddr, BufOffset;
 		DWORD	dwBytesRead;
 		BYTE	*TxDataBuf, *RxDataBuf;
+
 
 		if(pflash->getPageSEC() == 32)
 			EachTxSize = 12*1024;	// 16K_Flash, Each Page Write 12K
@@ -107,7 +112,7 @@ UINT CCISDLD0::Execute(	SettingConfgInfo *pCurSettingConfgInfo,
 		TxDataBuf=(BYTE *)malloc(sizeof(BYTE)*ISPTotalByte);
 		RxDataBuf=(BYTE *)malloc(sizeof(BYTE)*ISPTotalByte);
 		memset(TxDataBuf, 0, sizeof(BYTE)*ISPTotalByte);
-		fread(&TxDataBuf,sizeof(char),ISPRealByte,ISPBinFile);
+		fread(TxDataBuf,sizeof(char),ISPRealByte,ISPBinFile);
 		fseek(ISPBinFile, EachTxSize,SEEK_SET);//FW_1 without DRAM
 		fread(&TxDataBuf[ISP0TotalByte],sizeof(char),ISPRealByte-EachTxSize,ISPBinFile);//FW_1 without DRAM
  // Sherlock_20140814, Put Here For "GOTO"
@@ -233,9 +238,9 @@ UINT CCISDLD0::Execute(	SettingConfgInfo *pCurSettingConfgInfo,
 
 
 
-
+		ptUFDBlockMap = pRootTable->getUFDBlockMap();
 		// Set eCIS BitMap Data
-		Status = pmCisTool->setBlockMaptoBitMap(pflash,pRootTable,pRootTable->getUFDBlockMap(),pCISInfo);
+		Status = pmCisTool->setBlockMaptoBitMap(pflash,pRootTable,ptUFDBlockMap,pCISInfo);
 		// calc the checksum
 		pWORD = (WORD *) &eCISSetData;
 		for(i=1; i < (int)offsetof(eMMC_CIS_INFO, Bit_Map[0])/2; i++)
@@ -482,7 +487,7 @@ UINT CCISDLD0::Execute(	SettingConfgInfo *pCurSettingConfgInfo,
 				}
 			}
 			// ===== PART A: End =====
-
+           memcpy(TxDataBuf_Array,TxDataBuf,sizeof(BYTE)*270336);
 			// ===== PART B: Write Firmware Image 0 into Each Blocks =====
 			for(pln =0; pln<2; pln++)
 			{
@@ -536,7 +541,7 @@ UINT CCISDLD0::Execute(	SettingConfgInfo *pCurSettingConfgInfo,
 					}
 
 				}
-
+				 memcpy(RxDataBuf_Array,RxDataBuf,sizeof(BYTE)*270336);
 				// ----- FW0_Step 3/3: Compare FW 0  -----
 				for(BufOffset=0; BufOffset<ISP0TotalByte; BufOffset++)
 				{
