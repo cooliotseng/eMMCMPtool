@@ -20,6 +20,7 @@ CCIS::CCIS() {
 	pmflash = NULL;
 	pmCISDL = NULL;
 	pmroottable = NULL;
+	memset(eCISADDR,0xFF,sizeof(UINT)*4);
 }
 
 CCIS::CCIS(CRootTable *proottable,ICISDL *pCISDL,SettingConfgInfo *CurSettingConfgInfo,CFlash *pflash,CRootTable *roottable,ULONG ISPTotalByte) {
@@ -38,7 +39,7 @@ CCIS::CCIS(CRootTable *proottable,ICISDL *pCISDL,SettingConfgInfo *CurSettingCon
 	tPageSEC = pmflash->getPageSEC();
 	m_BlockPage = pmflash->getBlockPage();
 	memset(Original_EraseCnt,0,sizeof(UINT)*4);
-
+	memset(eCISADDR,0xFF,sizeof(UINT)*4);
 	if( tPageSEC == 32)
 		EachTxSize = 12*1024;	// 16K_Flash, Each Page Write 12K
 	else
@@ -198,7 +199,7 @@ UINT* CCIS::getCISBlocksAddr(SettingConfgInfo *CurSettingConfgInfo,CRootTable *r
 	UINT	index,Status;
 	UINT	Address;
 
-	memset(eCISADDR,0xFF,sizeof(UINT)*4);
+
 	memset(Original_EraseCnt,0,sizeof(UINT));
 
 	memset(&TableCfg, 0x00, sizeof(TableCFG));
