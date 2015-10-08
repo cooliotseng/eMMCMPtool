@@ -137,6 +137,8 @@ SKIP_SET_RT_ERASECOUNT:
     // ====================================================
     cout <<"STEP 6/6: BUILD eCIS BLOCK" <<endl;
 
+    status = pmflash->setEcc(ECC60BIT);
+
     pmCIS->DownloadCIS(pmCurSettingConfgInfo,ptroottable);
     CloseMMCTest();
     cout <<"end MP process" <<endl;

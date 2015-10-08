@@ -110,8 +110,8 @@ typedef struct _RTblInfo
 
 #define	MAX_ZONE			256
 #define	MAX_CACHE_NO		32
-#define	MAX_MTBL_BLK_NO	32
-#define	QDEPTH_GBLK		5
+#define	MAX_MTBL_BLK_NO		32
+#define	QDEPTH_GBLK			5
 
 typedef struct
 {
@@ -932,4 +932,6 @@ const BYTE WriteCMD_TSB_2P[14] = {0x02,0x1B,0x80,0x5,0x11,0x0,0x0,0x0,0x81,0x5,0
 #define PreMPFWWait1Sec	BIT18
 #define PreMPFW			BIT17
 #define NormalFW			BIT16
+
+#define ECC60BIT 	2
 

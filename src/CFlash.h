@@ -56,6 +56,7 @@ public:
 	UINT MarkBad(ULONG Address, BYTE PageSEC,USHORT LessPage);
 	UINT INITISP(ULONG AddrOffset, USHORT BufLen, BYTE *buffer);
 	UINT resetEcc();
+	UINT setEcc(BYTE ECC);
 	UINT setMultiPageAccress();
 	UINT getFlashType();
 	UINT writeTPMT();

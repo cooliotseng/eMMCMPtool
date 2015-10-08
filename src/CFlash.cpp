@@ -406,53 +406,56 @@ UINT CFlash:: DownloadVDRFw(char *FWFileName) {
 	return Status;
 }
 
+UINT CFlash::setEcc(BYTE ECC) {
+	UINT	TempSts = Fail_State;
+	BYTE	Register, Cnt, WaitLimit = 50;
+	// Set ECC 2608
+	TempSts = readData(0x1FF82608, 1, &Register);
+	Register = (Register & (0xFC)) + ECC; // 00b=24-bit, 01b=40-bit, 10b=60-bit
+	TempSts = writeData(0x1FF82608, 1, &Register);
 
+	// 264E|=0x70
+	TempSts = readData(0x1FF8264E, 1, &Register);
+	Register |= 0x70;
+	TempSts = writeData(0x1FF8264E, 1, &Register);
+
+	// 264F|=0x71
+	TempSts = readData(0x1FF8264F, 1, &Register);
+	Register |= 0x71;
+	TempSts = writeData(0x1FF8264F, 1, &Register);
+
+	// Wait 2105=0xF0
+	for(Cnt=0; Cnt<WaitLimit; Cnt++)
+	{
+		TempSts = readData(0x1FF82105, 1, &Register);
+		if((Register & 0x0F) == 0x00)
+			break;
+		usleep(100000);
+	}
+
+	if(Cnt == WaitLimit)
+		return Fail_State;
+
+	// 264E &=(0x70)
+	TempSts = readData(0x1FF8264E, 1, &Register);
+	Register &= (~0x70);
+	TempSts = writeData(0x1FF8264E, 1, &Register);
+
+	// 264F &=(0x70)
+	TempSts = readData(0x1FF8264F, 1, &Register);
+	Register &= (~0x70);
+	TempSts = writeData(0x1FF8264F, 1, &Register);
+
+	return TempSts;
+
+}
 
 
 UINT CFlash::resetEcc() {
 	// TODO Auto-generated constructor stub
-		UINT	TempSts = Fail_State;
-		BYTE	Register, Cnt, WaitLimit = 50;
+
 		BYTE 	ECC = pmFlashStructure->FlashFwScheme->Model3 & 0x03;
-
-		// Set ECC 2608
-		TempSts = readData(0x1FF82608, 1, &Register);
-		Register = (Register & (0xFC)) + ECC; // 00b=24-bit, 01b=40-bit, 10b=60-bit
-		TempSts = writeData(0x1FF82608, 1, &Register);
-
-		// 264E|=0x70
-		TempSts = readData(0x1FF8264E, 1, &Register);
-		Register |= 0x70;
-		TempSts = writeData(0x1FF8264E, 1, &Register);
-
-		// 264F|=0x71
-		TempSts = readData(0x1FF8264F, 1, &Register);
-		Register |= 0x71;
-		TempSts = writeData(0x1FF8264F, 1, &Register);
-
-		// Wait 2105=0xF0
-		for(Cnt=0; Cnt<WaitLimit; Cnt++)
-		{
-			TempSts = readData(0x1FF82105, 1, &Register);
-			if((Register & 0x0F) == 0x00)
-				break;
-			usleep(100000);
-		}
-
-		if(Cnt == WaitLimit)
-			return Fail_State;
-
-		// 264E &=(0x70)
-		TempSts = readData(0x1FF8264E, 1, &Register);
-		Register &= (~0x70);
-		TempSts = writeData(0x1FF8264E, 1, &Register);
-
-		// 264F &=(0x70)
-		TempSts = readData(0x1FF8264F, 1, &Register);
-		Register &= (~0x70);
-		TempSts = writeData(0x1FF8264F, 1, &Register);
-
-		return TempSts;
+		return setEcc(ECC);
 }
 
 UINT CFlash::setMultiPageAccress() {

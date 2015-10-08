@@ -130,6 +130,8 @@ UINT CCISDLD0::Execute(	SettingConfgInfo *pCurSettingConfgInfo,
 		// Sherlock_20140819, Modify For eMMC_CFG_A2Scan
 
 		memset(&eCISSetData, 0, sizeof(eMMC_CIS_INFO));
+		Status = SetSLCPageCIS( pflash, &TurboPage[0], &TurboPage_NUM, &TurboPage_Type);
+		eCISSetData.PAGE_MODE = 1;
 /*
 		if(pCurSettingConfgInfo->TestProcedureMask & Proc_SLCPageMode) //Cody_20150422
 		{
@@ -665,3 +667,57 @@ UINT CCISDLD0::Execute(	SettingConfgInfo *pCurSettingConfgInfo,
 		free(LastRTDataBuf);
 		return Status;
 	}
+
+//-----------------------------------------------------------------------------
+//==================================================================
+// 	SLC mode Page List
+//	Type_1: {0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, ...... 252, 254}, Length = BlockPage/2
+//	Type_2: {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, ...... 126, 127...}, Length = BlockPage/2
+//
+//==================================================================
+// Sherlock_20140819, Modify For eMMC_CFG_A2Scan
+UINT CCISDLD0::SetSLCPageCIS(CFlash *pflash, USHORT *TurboPage, USHORT *TurboPage_NUM, USHORT *TurboPage_Type)  //Cody_20150420
+{
+	USHORT     Index, TPMTLen;
+	BYTE	Type = 1; // Default Type
+	UINT 	BaseFID[8] = {0};
+
+	pflash->getFlashID(BaseFID);
+
+	if((BaseFID[0]== 0x2C) || (BaseFID[0] == 0x89))
+		Type = 2;	// Micron/Intel MLC //For D0 test SLC mode
+	else if((BaseFID[0]== 0x98) || (BaseFID[0] == 0xEC) || (BaseFID[0] == 0x45))
+		Type = 1; 	// Toshiba/Samsung/SanDisk MLC
+	else if(BaseFID[0]== 0xAD)
+		Type =  2; //Cody_20150413  Hynix for FW test  For D0 test SLC mode
+	else
+		Type = 2; 	// Default  Cody_20150413  Hynix for FW test  For D0 test SLC mode
+
+
+	if(Type == 1) // for Derek test  {0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, ...... 252, 254}, Length = 128  Cody_20150410
+	{
+
+		TPMTLen = pflash->getBlockPage() / 2;
+		TurboPage[0] = 0;
+		for(Index=1; Index<TPMTLen; Index++)
+		{
+			TurboPage[Index] = (USHORT)(2*Index ) ;
+		}
+	}
+	else if(Type == 2) // M73 Flash, Sherlock_20130111  and Hynix Flash Cody_20150413
+	{
+		TPMTLen = pflash->getBlockPage() / 2; //Cody_20150413
+		for(Index=0; Index<TPMTLen; Index++)
+		{
+			TurboPage[Index] = (USHORT)Index;
+		}
+	}
+
+	// ----- General Setting for All NAND Flash -----
+	for(Index=TPMTLen; Index<256; Index++)				// Set Other Data as 0xFF
+		TurboPage[Index] = (USHORT)0xFFFF;
+
+	*TurboPage_NUM = TPMTLen;
+	*TurboPage_Type = Type;
+	return 1;
+}

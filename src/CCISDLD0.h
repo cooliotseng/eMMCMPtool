@@ -13,6 +13,8 @@
 
 
 class CCISDLD0: public ICISDL {
+private:
+	UINT SetSLCPageCIS(CFlash *pflash, USHORT *TurboPage, USHORT *TurboPage_NUM, USHORT *TurboPage_Type);  //Cody_20150420
 public:
 	CCISDLD0(ICISTool * pcistool);
 	virtual ~CCISDLD0();
@@ -23,6 +25,7 @@ public:
 				UINT 			*eCISADDR,
 				UINT			*Original_EraseCnt,
 				UINT			Terminate);
+
 };
 
 #endif /* SRC_CCISDLD0_H_ */

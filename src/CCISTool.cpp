@@ -102,11 +102,8 @@ UINT CCISTool::setBlockMaptoBitMap(CFlash *pflash,CRootTable *roottable,LPMapChi
 
 	for(CE=0; CE<pflash->getChipSelectNum(); CE++)
 	{
-		if((RootTable[CE].dwRTBLVersion & 0xFFFF0000) == 0x52540000) // RT_TAG Protection
-		{
 			memcpy(&pCISInfo->Cell_Map[512*CE], &RootTable[CE].chBlkTagBitMapTbl[0], 262);	 	// Copy into eCIS.CellMap[]
 			memcpy(&pCISInfo->ECC_Map[512*CE], &RootTable[CE].chBlkECCBitMapTbl[0], 262);	// Copy into eCIS.ECCMap[]
-		}
 	}
 	// ---------- Only Output Message of Cell ECC Map ----------
 
