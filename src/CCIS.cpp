@@ -1354,8 +1354,8 @@ UINT CCIS::BlockStressTest(BYTE CEIndex, BYTE CHIndex, UINT EntryIndex, BYTE Blo
 	Address=(ChipAddress<<24)|((EntryIndex*8+BlockIndex)*m_BlockPage);
 
 	// Sherlock_20140815, Set Target Block As MLC & Default_ECC
-	pmroottable->setCellMap(Address,pmflash, 1);
-	pmroottable->setEccMap(Address, pmflash, 0);
+	pmroottable->setCellMap(Address,1);
+	pmroottable->setEccMap(Address,0);
 Retry_BST_Erase:
 	Status=pmflash->BlockOtherRead(MI_BLOCK_ERASE, 0, 0, Address, 1, &EraseStatus);
 	if(!Status)

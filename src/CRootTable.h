@@ -17,13 +17,13 @@ private:
 	MapChipSelect 	*pmUFDBlockMap;// coolio temp
 	CFlash 			*pmflash;
 	UINT 			mRTInfoINITFlag;
-	UINT    		UpdatePairMapByAddress(ULONG Address, USHORT BlockPage, BYTE PlaneNum, BYTE MLC, BYTE MaxECC);
+
 public:
 	CRootTable();
 	CRootTable(CFlash *flash);
 	virtual ~CRootTable();
-	UINT setCellMap(ULONG Address, CFlash *pmflash, BYTE MLC);
-	UINT setEccMap(ULONG Address, CFlash *pmflash, BYTE MaxECC);
+	UINT setCellMap(ULONG Address, BYTE MLC);
+	UINT setEccMap(ULONG Address, BYTE MaxECC);
 	UINT setSystemBlock(CFlash *pflash);
 	UINT setEccErrBlock(CFlash *pflash);
 	RTblInfo * getRTInfoTable();
@@ -43,7 +43,7 @@ public:
 	UINT EraseAllBlock();
 	MapChipSelect *AllocateBlockMapMemory();
 	BYTE GetUFDBlockMapByByte(BYTE CEIndex, BYTE ChannelIndex, INT EntryItemIndex);
-
+	UINT UpdatePairMapByAddress(ULONG Address, BYTE MLC, BYTE MaxECC);
 };
 
 #endif /* CROOTTABLE_H_ */

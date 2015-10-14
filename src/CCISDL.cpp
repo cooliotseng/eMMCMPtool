@@ -109,8 +109,8 @@ UINT CCISDL::Execute(	SettingConfgInfo *pCurSettingConfgInfo,
 		Status = pflash->writeEccMapBitLength(eCISADDR[i],1);
 	}
 	for(i=0; i<CISBlockNum; i++){ // Sherlock_20140815, Set CIS Block As MLC, 60-bits into PairMaps For FW Read
-		Status = pRootTable->setCellMap(eCISADDR[i],pflash,1);
-		Status = pRootTable->setEccMap(eCISADDR[i],pflash,1);
+		Status = pRootTable->setCellMap(eCISADDR[i],1);
+		Status = pRootTable->setEccMap(eCISADDR[i],1);
 	}
 	// Set eCIS BitMap Data
 	pmCisTool->setBlockMaptoBitMap(pflash,pRootTable,pRootTable->getUFDBlockMap(),&eCISSetData);

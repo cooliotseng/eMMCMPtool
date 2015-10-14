@@ -4,7 +4,7 @@
 
 using namespace std;
 
-#define BOOL bool
+#define BOOL int
 #define BYTE unsigned char
 #define UINT unsigned int
 #define USHORT unsigned short
@@ -13,7 +13,7 @@ using namespace std;
 #define INT  int
 #define TCHAR  char
 #define DWORD  unsigned long
-#define WORD   long
+#define WORD   unsigned short
 #define ULONGLONG unsigned long long
 #define MAX_PATH 32767
 #define LPVOID void *
@@ -57,7 +57,7 @@ typedef struct _SaveBadBlockInfo // Sherlock_20120130
 
 typedef struct _Flash_FwScheme
 {
-	UINT   FLH_ID[8];
+	BYTE   FLH_ID[8];
 
 	BYTE   Model0;
 	BYTE   Model1;
@@ -69,11 +69,11 @@ typedef struct _Flash_FwScheme
 	BYTE   Model7;
 
 	USHORT LessBlock;	// Extended Block
-	UINT LessPage;
-	UINT BlockPage;
+	USHORT LessPage;
+	USHORT BlockPage;
 	BYTE   PageSEC;
 	BYTE   SelectPlane;
-	UINT PlaneBlock;
+	USHORT PlaneBlock;
 
 	BYTE   Rsv1[6];	// [0~3]:As SettingCapacity & Return RealCapacity
 					// [4]: Flag of New FW Algorithm, 0:Old, 1:New
@@ -389,7 +389,7 @@ typedef struct _CIS_INFO
 	UINT   LunStartLBA[4];
 	UINT   LunCapacity[4];
 	BYTE   LunAttribute[4];
-	UINT   LunType[4];
+	BYTE   LunType[4];
 	UINT   SysStartLBA;
 	UINT   SysCapacity;
 	BYTE   Manufacture[32];

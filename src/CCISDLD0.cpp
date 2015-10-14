@@ -212,28 +212,26 @@ UINT CCISDLD0::Execute(	SettingConfgInfo *pCurSettingConfgInfo,
 		memcpy(eCISSetData.Ext_CSD, Default_ExtCSD, sizeof(Default_ExtCSD));
 		// Get ExtCSD Data From File, Sherlock_20140620
 		//eMMC_Get_CID_From_File(&eCISSetData);
-
-		if(pCurSettingConfgInfo->TestProcedureMask & Proc_SLCPageMode)
+		//if(pCurSettingConfgInfo->TestProcedureMask & Proc_SLCPageMode)
+		if(Proc_SLCPageMode & Proc_SLCPageMode)
 		{
 			for(i=0; i<CISBlockNum; i++){ // Sherlock_20140815, Set CIS Block As MLC, 60-bits into PairMaps For FW Read
-				Status = pRootTable->setCellMap(eCISADDR[i],pflash,0);
-				Status = pRootTable->setEccMap(eCISADDR[i],pflash,1);
+				Status = pRootTable->UpdatePairMapByAddress(eCISADDR[i],0,1);
 			}
 			for(i=0; i<CISBlockNum; i++){ // Sherlock_20140815, Set CIS Block As MLC, 60-bits into PairMaps For FW Read
-				Status = pRootTable->setCellMap(eCISADDR[i],pflash,0);
-				Status = pRootTable->setEccMap(eCISADDR[i],pflash,1);
+				Status = pRootTable->setCellMap(eCISADDR[i],0);
+				Status = pRootTable->setEccMap(eCISADDR[i],1);
 			}
 		}
 		else
 		{
 			for(i=0; i<CISBlockNum; i++){ // Sherlock_20140815, Set CIS Block As MLC, 60-bits into PairMaps For FW Read
-				Status = pRootTable->setCellMap(eCISADDR[i],pflash,1);
-				Status = pRootTable->setEccMap(eCISADDR[i],pflash,1);
+				Status = pRootTable->UpdatePairMapByAddress(eCISADDR[i],1,1);
 			}
 
 			for(i=0; i<CISBlockNum; i++){ // Sherlock_20140815, Set CIS Block As MLC, 60-bits into PairMaps For FW Read
-				Status = pRootTable->setCellMap(eCISADDR[i],pflash,1);
-				Status = pRootTable->setEccMap(eCISADDR[i],pflash,1);
+				Status = pRootTable->setCellMap(eCISADDR[i],1);
+				Status = pRootTable->setEccMap(eCISADDR[i],1);
 			}
 		}
 

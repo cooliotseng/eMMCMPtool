@@ -37,8 +37,8 @@ CRootTable::CRootTable(CFlash *flash) {
 	if(pmflash->isOldVersionCISExit()){
 		mRTInfoINITFlag = initRTInfoTable();
 		if(mRTInfoINITFlag == Success_State){
-			setCellMap(pmRTInfo->RAWAddr0,pmflash,pmRTInfo->CellType);
-			setEccMap(pmRTInfo->RAWAddr0,pmflash,pmRTInfo->CellType);
+			setCellMap(pmRTInfo->RAWAddr0,pmRTInfo->CellType);
+			setEccMap(pmRTInfo->RAWAddr0,pmRTInfo->CellType);
 			initRootTable();
 		}
 	}
@@ -54,7 +54,7 @@ void CRootTable::setFlash(CFlash *flash) {
 	pmflash=flash;
 }
 
-UINT CRootTable::setCellMap(ULONG Address, CFlash *pmflash, BYTE MLC) {
+UINT CRootTable::setCellMap(ULONG Address,BYTE MLC) {
 	// TODO Auto-generated constructor stub
 		UINT	PU_Idx, Byte_Idx, bit_Idx;
 		BYTE	ValueTmp;
@@ -75,7 +75,7 @@ UINT CRootTable::setCellMap(ULONG Address, CFlash *pmflash, BYTE MLC) {
 		return Success_State;
 }
 
-UINT CRootTable::setEccMap(ULONG Address, CFlash *pmflash, BYTE MaxECC) {
+UINT CRootTable::setEccMap(ULONG Address, BYTE MaxECC) {
 	// TODO Auto-generated constructor stub
 		UINT	PU_Idx, Byte_Idx, bit_Idx;
 		BYTE	ValueTmp;
@@ -106,8 +106,8 @@ UINT CRootTable::setSystemBlock(CFlash *pflash) {
 		{
 			if(pmUFDBlockMap->SysBlkAdr[Idx] == 0)
 				break;
-			Status = setCellMap(pmUFDBlockMap->SysBlkAdr[Idx],pflash,1);
-			Status = setEccMap(pmUFDBlockMap->SysBlkAdr[Idx], pflash,0);
+			Status = setCellMap(pmUFDBlockMap->SysBlkAdr[Idx],1);
+			Status = setEccMap(pmUFDBlockMap->SysBlkAdr[Idx], 0);
 		}
 
 		return Status;
@@ -121,8 +121,8 @@ UINT CRootTable::setEccErrBlock(CFlash *pflash) {
 		{
 			if(pmUFDBlockMap->EccErrBlkAdr[Idx] == 0)
 				break;
-			Status = setCellMap(pmUFDBlockMap->EccErrBlkAdr[Idx],pflash,1);
-			Status = setEccMap(pmUFDBlockMap->EccErrBlkAdr[Idx], pflash,0);
+			Status = setCellMap(pmUFDBlockMap->EccErrBlkAdr[Idx],1);
+			Status = setEccMap(pmUFDBlockMap->EccErrBlkAdr[Idx], 0);
 		}
 
 		return Status;
@@ -867,7 +867,7 @@ ReSendEraseSysBlock:
 						Spare.SPARE3=(BYTE)((TempEraseCount + 1)>>8);	// HI
 						Spare.SPARE2=(BYTE)(TempEraseCount + 1);		// LO
 
-						Status = UpdatePairMapByAddress(Address+(bufIndex*m_BlockPage), m_BlockPage, pmflash->getPlaneNum(), 1, 0);
+						Status = UpdatePairMapByAddress(Address+(bufIndex*m_BlockPage), 1, 0);
 
 						Status=pmflash->BlockOtherRead(MI_BLOCK_ERASE, 0, 0, Address+(bufIndex*m_BlockPage), 1, &buffertmp);
 						// ----- Sherlock_20140114, If DataLen < PageSector, Use DataLen/512 into cdb[7] -----
@@ -906,7 +906,7 @@ ReSendEraseSysBlock:
 					{
 						ErrorCnt=0;
 
-						Status = UpdatePairMapByAddress(Address+(bufIndex*m_BlockPage), m_BlockPage, pmflash->getPlaneNum(), 1, 0);
+						Status = UpdatePairMapByAddress(Address+(bufIndex*m_BlockPage), 1, 0);
 ReSendEraseGoodBlock:
 						Status=pmflash->BlockOtherRead(MI_BLOCK_ERASE, 0, 0, Address+(bufIndex*m_BlockPage), 1, &buffertmp);
 						if(!Status)
@@ -974,7 +974,7 @@ ReSendEraseEncryptionGoodBlock:
 					EccErrSpare.SPARE3=(BYTE)((EccErrEraseCount + 1)>>8);	// HI
 					EccErrSpare.SPARE2=(BYTE)(EccErrEraseCount + 1);		// LO
 
-					Status = UpdatePairMapByAddress(Address+(bufIndex*m_BlockPage), m_BlockPage, pmflash->getPlaneNum(), 1, 0);
+					Status = UpdatePairMapByAddress(Address+(bufIndex*m_BlockPage), 1, 0);
 
 Retry_BST_Erase:
 					Status=pmflash->BlockOtherRead(MI_BLOCK_ERASE, 0, 0, Address+(bufIndex*m_BlockPage), 1, &buffertmp);
@@ -1332,12 +1332,13 @@ MapChipSelect * CRootTable::AllocateBlockMapMemory(){
 }
 
 
-UINT CRootTable::UpdatePairMapByAddress(ULONG Address, USHORT BlockPage, BYTE PlaneNum, BYTE MLC, BYTE MaxECC)
+UINT CRootTable::UpdatePairMapByAddress(ULONG Address,BYTE MLC, BYTE MaxECC)
 {
 	UINT 	PU_Idx, Byte_Idx, bit_Idx;
 	BYTE	CellMap, ECCMap, ValueTmp;
 	BOOL 	Status = false;
-
+	USHORT BlockPage = pmflash->getBlockPage();
+	BYTE PlaneNum = pmflash->getPlaneNum();
 	PU_Idx = (Address & 0xF0000000) >> 28;					// eMMC Only 1 CH
 	Address = (Address & 0x00FFFFFF)/BlockPage/PlaneNum;	// RAWAdr_BlockAdr_PairAdr
 	Byte_Idx = Address / 8;
