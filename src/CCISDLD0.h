@@ -15,6 +15,7 @@
 class CCISDLD0: public ICISDL {
 private:
 	UINT SetSLCPageCIS(CFlash *pflash, USHORT *TurboPage, USHORT *TurboPage_NUM, USHORT *TurboPage_Type);  //Cody_20150420
+	UINT SetTPMTeCIS(CFlash *pflash, USHORT *TurboPage, USHORT *TurboPage_NUM, USHORT *TurboPage_Type);
 public:
 	CCISDLD0(ICISTool * pcistool);
 	virtual ~CCISDLD0();

@@ -129,20 +129,19 @@ UINT CCISDLD0::Execute(	SettingConfgInfo *pCurSettingConfgInfo,
 		// Sherlock_20140819, Modify For eMMC_CFG_A2Scan
 
 		memset(&eCISSetData, 0, sizeof(eMMC_CIS_INFO));
-		Status = SetSLCPageCIS( pflash, &TurboPage[0], &TurboPage_NUM, &TurboPage_Type);
-		eCISSetData.PAGE_MODE = 1;
-/*
+
+
 		if(pCurSettingConfgInfo->TestProcedureMask & Proc_SLCPageMode) //Cody_20150422
 		{
-			Status = SetSLCPageCIS( pCurSettingConfgInfo, &TurboPage[0], &TurboPage_NUM, &TurboPage_Type);
+			Status = SetSLCPageCIS( pflash, &TurboPage[0], &TurboPage_NUM, &TurboPage_Type);
 			eCISSetData.PAGE_MODE = 1;
 		}
 		else
 		{
-			Status = SetTPMTeCIS(pCurSettingConfgInfo, &TurboPage[0], &TurboPage_NUM, &TurboPage_Type);
+			Status = SetTPMTeCIS(pflash, &TurboPage[0], &TurboPage_NUM, &TurboPage_Type);
 			eCISSetData.PAGE_MODE = 0;
 		}
-*/
+
 		eCISSetData.CE_NUM = pflash->getChipSelectNum();
 		eCISSetData.CH_NUM = pflash->getChannelNum();
 		eCISSetData.FLH_DRV = pCurSettingConfgInfo->FlashDriving;
@@ -212,8 +211,7 @@ UINT CCISDLD0::Execute(	SettingConfgInfo *pCurSettingConfgInfo,
 		memcpy(eCISSetData.Ext_CSD, Default_ExtCSD, sizeof(Default_ExtCSD));
 		// Get ExtCSD Data From File, Sherlock_20140620
 		//eMMC_Get_CID_From_File(&eCISSetData);
-		//if(pCurSettingConfgInfo->TestProcedureMask & Proc_SLCPageMode)
-		if(Proc_SLCPageMode & Proc_SLCPageMode)
+		if(pCurSettingConfgInfo->TestProcedureMask & Proc_SLCPageMode)
 		{
 			for(i=0; i<CISBlockNum; i++){ // Sherlock_20140815, Set CIS Block As MLC, 60-bits into PairMaps For FW Read
 				Status = pRootTable->UpdatePairMapByAddress(eCISADDR[i],0,1);
@@ -677,7 +675,7 @@ UINT CCISDLD0::SetSLCPageCIS(CFlash *pflash, USHORT *TurboPage, USHORT *TurboPag
 {
 	USHORT     Index, TPMTLen;
 	BYTE	Type = 1; // Default Type
-	UINT 	BaseFID[8] = {0};
+	BYTE 	BaseFID[8] = {0};
 
 	pflash->getFlashID(BaseFID);
 
@@ -717,4 +715,180 @@ UINT CCISDLD0::SetSLCPageCIS(CFlash *pflash, USHORT *TurboPage, USHORT *TurboPag
 	*TurboPage_NUM = TPMTLen;
 	*TurboPage_Type = Type;
 	return 1;
+}
+
+UINT CCISDLD0::SetTPMTeCIS(CFlash *pflash, USHORT *TurboPage, USHORT *TurboPage_NUM, USHORT *TurboPage_Type)  //Cody_20150420
+{
+	USHORT     Index, TPMTLen;
+	BYTE 	BaseFID[8];
+	WORD	BaseFType;
+	pflash->getFlashID(BaseFID);
+	BaseFType=pflash->getBaseFType();
+	BYTE	Type = 1; // Default Type
+	BYTE	TC58NVG6D2GTA00[8]	= {0x98, 0xDE, 0x94, 0x82, 0x76, 0x56, 0x01, 0x20};	// Toshiba MLC SDR 24nm
+	BYTE	MT29F64G08CBABB[8]	= {0x2C, 0x64, 0x44, 0x4B, 0xA9, 0x00, 0x00, 0x00};	// Micorn L84
+	BYTE	MT29F128G08CBCAB[8]	= {0x2C, 0x84, 0x64, 0x3C, 0xA5, 0x00, 0x00, 0x00};	// Micorn L85
+	BYTE	MT29F256G08CJABB[8]	= {0x2C, 0x84, 0xC5, 0x4B, 0xA9, 0x00, 0x00, 0x00};	// Micorn L84 2Die
+	BYTE	JS29F64G08AAMF1[8]	= {0x89, 0x88, 0x24, 0x4B, 0xA9, 0x84, 0x00, 0x00};	// New L84
+	BYTE	MICRON_M73_1[8]		= {0x2C, 0x88, 0x01, 0xA7, 0xA9, 0x00, 0x00, 0x00};	// Micorn M 73
+	BYTE	MICRON_M73_2[8]		= {0x2C, 0x68, 0x00, 0xA7, 0xA9, 0x00, 0x00, 0x00};	// Micorn M 73
+	BYTE	MT29F256G08CECAB[8]	= {0x2C, 0x84, 0x64, 0x3C, 0xA5, 0x00, 0x00, 0x00};	// Micron DDP 2Die 2CE == L85
+	BYTE	MT29F512G08CKCAB[8]	= {0x2C, 0xA4, 0xE5, 0x3C, 0xA5, 0x00, 0x00, 0x00};	// Micron QDP 4Die 2CE
+	BYTE	MT29F1T08CUCAB[8]		= {0x2C, 0xA4, 0xE5, 0x3C, 0xA5, 0x00, 0x00, 0x00};	// Micron ODP 8Die 4CE == QDP
+	BYTE	MT29F64G08CBCDB[8]	= {0x2C, 0x64, 0x64, 0x3C, 0xA5, 0x04, 0x00, 0x00};	// Micron L84C
+
+	if(memcmp(TC58NVG6D2GTA00, BaseFID, FID_Chk_Len) == 0)
+		Type = 1; // Toshiba Special Case, Sherlock_20120807
+	else if(memcmp(MT29F64G08CBABB,	 BaseFID, FID_Chk_Len) == 0)
+		Type = 6; // New L84
+	else if(memcmp(MT29F128G08CBCAB, BaseFID, FID_Chk_Len) == 0)
+		Type = 7; // Micorn L85
+	else if(memcmp(MT29F256G08CJABB, BaseFID, FID_Chk_Len) == 0)
+		Type = 6; // New L84
+	else if(memcmp(JS29F64G08AAMF1, BaseFID, FID_Chk_Len) == 0)
+		Type = 6; // New L84
+	else if(memcmp(MICRON_M73_1, BaseFID, FID_Chk_Len) == 0)
+		Type = 8; // M 73
+	else if(memcmp(MICRON_M73_2, BaseFID, FID_Chk_Len) == 0)
+		Type = 8; // M 73
+	else if(memcmp(MT29F256G08CECAB, BaseFID, FID_Chk_Len) == 0)
+		Type = 7; // Micron DDP 2Die 2CE
+	else if(memcmp(MT29F512G08CKCAB, BaseFID, FID_Chk_Len) == 0)
+		Type = 7; // Micron QDP 4Die 2CE
+	else if(memcmp(MT29F1T08CUCAB, BaseFID, FID_Chk_Len) == 0)
+		Type = 7; // Micron ODP 8Die 4CE
+	else if(memcmp(MT29F64G08CBCDB, BaseFID, FID_Chk_Len) == 0)
+		Type = 11; // Micron L84C
+
+	else if((BaseFType & (FT_Vendor|FT_Cell_Level)) == (FT_Toshiba|FT_TLC))
+		Type = 3; 	// Toshiba ED3
+	else if((BaseFType & (FT_Vendor|FT_Cell_Level)) == (FT_Samsung|FT_TLC))
+		Type = 4; 	// Samsung TLC
+	else if((BaseFID[0]== 0x2C) || (BaseFID[0] == 0x89))
+		Type = 1;	// Micron/Intel MLC
+	else if((BaseFID[0]== 0x98) || (BaseFID[0] == 0xEC) || (BaseFID[0] == 0x45))
+		Type = 2; 	// Toshiba/Samsung/SanDisk MLC
+	else
+		Type = 2; 	// Default
+
+
+		if(Type ==1) // Intel Class, JS29F16B08CAME1
+		{
+			TPMTLen = 128;			// pCISSetDataEx->FLH_FwScheme.BlockPage/2=256/2
+			TurboPage[0] = 0;
+			TurboPage[1] = 1;
+			for(Index=0; Index<(TPMTLen-2); Index=Index+2)
+			{
+				TurboPage[Index+2] = (USHORT)(2*Index + 2);
+				TurboPage[Index+3] = (USHORT)(2*Index + 3);
+			}
+		}
+		else if(Type == 2) // Toshiba Class, TC58NVG4D2FTA
+		{
+			TPMTLen = pflash->getBlockPage() / 2;
+	//		TPMTLen = 64;
+			TurboPage[0] = 0;
+			for(Index=1; Index<TPMTLen; Index++)
+			{
+				TurboPage[Index] = (USHORT)(2*Index -1) ;
+			}
+		}
+		else if(Type == 3) // Toshiba ED3 Flash, Sherlock_20110926
+		{
+			TPMTLen = 86;
+			for(Index=0; Index<TPMTLen; Index++)
+			{
+				TurboPage[Index] = (USHORT)Index;
+			}
+		}
+		else if(Type == 4) // Samsung TLC Flash, Sherlock_20110926
+		{
+			TPMTLen = 192;
+			for(Index=0; Index<TPMTLen; Index++)
+			{
+				TurboPage[Index] = (USHORT)Index;
+			}
+			TPMTLen = 64; // Special Tony Test Only
+		}
+		else if(Type == 5) // Micorn L84, Sherlock_20120413
+		{
+			TPMTLen = 64;
+			TurboPage[0] = 0;
+			for(Index=1; Index<TPMTLen; Index++)
+			{
+				TurboPage[Index] = (USHORT)(4*Index-1);
+			}
+		}
+		else if(Type == 6) // New L84, Sherlock_20120703
+		{
+			TPMTLen = 64;
+			TurboPage[0] = 0;
+			TurboPage[63] = 254;
+			for(Index=1; Index<(TPMTLen-1); Index=Index+1)
+			{
+				TurboPage[Index] 	= (USHORT)(4*Index+4);
+			}
+		}
+		else if(Type ==7) // 20121213
+		{
+			TPMTLen = 128;
+			TurboPage[0] = 0;
+			TurboPage[1] = 1;
+			for(Index=0; Index<(TPMTLen-2); Index=Index+2)
+			{
+				TurboPage[Index+2] = (USHORT)(2*Index + 4);
+				TurboPage[Index+3] = (USHORT)(2*Index + 5);
+			}
+		}
+		else if(Type == 8) // M73 Flash, Sherlock_20130111
+		{
+			TPMTLen = pflash->getBlockPage() / 2; //Cody_20150413
+			for(Index=0; Index<TPMTLen; Index++)
+			{
+				TurboPage[Index] = (USHORT)Index;
+			}
+		}
+		else if(Type == 9) // Sherlock_20130319
+		{
+			TPMTLen = 128;
+			TurboPage[0] = 0;
+			TurboPage[1] = 2;
+			TurboPage[2] = 3;
+			TurboPage[3] = 7;
+			for(Index=4; Index<TPMTLen; Index=Index+2)
+			{
+				TurboPage[Index]	= (USHORT)(2*Index + 2);
+				TurboPage[Index+1]	= (USHORT)(2*Index + 3);
+			}
+		}
+		else if(Type == 10) // Sherlock_20140321
+		{
+			TPMTLen = 128;
+			TurboPage[0] = 0;
+			TurboPage[1] = 2;
+			for(Index=2; Index<TPMTLen; Index=Index+1)
+			{
+				TurboPage[Index]	= (USHORT)(4*(Index - 1));
+			}
+		}
+		else if(Type == 11)
+		{
+			TPMTLen = 256;
+			for(Index=0; Index<6; Index=Index+1)
+				TurboPage[Index] = Index;
+
+			for(Index=6; Index<TPMTLen; Index=Index+2)
+			{
+				TurboPage[Index]	= (USHORT)(2*Index - 4);
+				TurboPage[Index+1]	= (USHORT)(2*Index - 4) +1;
+			}
+		}
+
+		// ----- General Setting for All NAND Flash -----
+		for(Index=TPMTLen; Index<256; Index++)				// Set Other Data as 0xFF
+			TurboPage[Index] = (USHORT)0xFFFF;
+
+		*TurboPage_NUM = TPMTLen;
+		*TurboPage_Type = Type;
+		return true;
 }

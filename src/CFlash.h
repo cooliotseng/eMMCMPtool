@@ -46,7 +46,7 @@ public:
 	BYTE getPlaneNum();
 	WORD getBaseFType();
 	BYTE getCHipVersion();
-	void getFlashID(UINT* buf);
+	void getFlashID(BYTE* buf);
 	UINT setFlashSize();
 	BYTE getChipSelectNum();
 	BYTE getChannelNum();
@@ -58,7 +58,6 @@ public:
 	UINT resetEcc();
 	UINT setEcc(BYTE ECC);
 	UINT setMultiPageAccress();
-	UINT getFlashType();
 	UINT writeTPMT();
 	UINT writeCellMapFlashType(ULONG TableAddress,BYTE MLCType);//0:MLC 1:SLC
 	UINT writeEccMapBitLength(ULONG TableAddress,BYTE MaxECCBitLength);

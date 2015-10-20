@@ -248,7 +248,7 @@ typedef struct _TableCFG
 	BYTE	ErrorBitRate;
 	BYTE	ECCSET;
 	BYTE	Type;			// Original Type
-	UINT	BaseFType;		// FlashType, Same As MPTool Using (New)
+	WORD	BaseFType;		// FlashType, Same As MPTool Using (New)
 	UINT	Mode;			// ToolMode (New)
 	UINT	ED3EraseCount;	// For ED3 Erase Count
 	UINT	RsvInfo;

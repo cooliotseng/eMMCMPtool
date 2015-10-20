@@ -165,7 +165,7 @@ BYTE CFlash:: getCHipVersion() {
 
 }
 
-void CFlash::getFlashID(UINT* buf) {
+void CFlash::getFlashID(BYTE* buf) {
 	// TODO Auto-generated constructor stub
 	memcpy(buf,pmFlashFwScheme->FLH_ID,8*sizeof(BYTE));
 }
@@ -506,13 +506,6 @@ UINT CFlash::setMultiPageAccress() {
 		Status = pmDriver->sendSetCommand(VCMD, buffer);
 		delete buffer;
 		return Status;
-}
-
-
-
-UINT CFlash::getFlashType() {
-	// TODO Auto-generated constructor stub
-	return mBaseFType;
 }
 
 UINT CFlash::writeTPMT() {

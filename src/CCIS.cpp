@@ -223,7 +223,7 @@ UINT* CCIS::getCISBlocksAddr(SettingConfgInfo *CurSettingConfgInfo,CRootTable *r
 	TableCfg.ErrorBitRate = (CurSettingConfgInfo->LunTypeBitMap2 & BitErrorRate);
 	TableCfg.ECCSET = ptFLH_FwScheme->Model3 & 0x0F;
 	TableCfg.Type|=MustMarkBad_TYPE;//(BIT2); //mark bad when block stress test fail or write system table fail retry 3 times
-	TableCfg.BaseFType = pmflash->getFlashType();
+	TableCfg.BaseFType = pmflash->getBaseFType();
 	TableCfg.Mode = 0;
 	TableCfg.ED3EraseCount = 0;
 	TableCfg.RsvInfo = 0;

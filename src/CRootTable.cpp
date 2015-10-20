@@ -162,7 +162,7 @@ UINT CRootTable::initRTInfoTable() {
 	UINT	Status = Fail_State;
 	USHORT	BlockAddr, PageAddr;
 	BYTE	buffer[7]={0xFF};
-	UINT   FLH_ID[8];
+	BYTE   FLH_ID[8];
 	VendorCMD	VCMD;
 	BYTE tPlaneNum;
 	UINT tBlockPage;
@@ -276,7 +276,7 @@ UINT CRootTable::updateEraseCount() {
 		UINT	Status = Fail_State;
 		BYTE	ECC;// = bit_7 + bit_0; // Encryption_On(Bit7) + ECC_On(Bit6) + 40bit_ECC(Bit1 & Bit0)
 		BYTE	TxDataBuf[1024];
-		UINT   FLH_ID[8];
+		BYTE   FLH_ID[8];
 		UINT	PU_Idx, chMaxCachBufNo = 0, Cache_Idx, TempAddr, OriginNRT, FB_Idx, QDep_Idx, FB_PU, FB_Pair;
 		USHORT	BlockPage = pmflash->getBlockPage();
 		BYTE tPlaneNum=pmflash->getPlaneNum();
@@ -1209,7 +1209,7 @@ void CRootTable::setMapEntryItem(BYTE CEIndex, BYTE ChannelIndex,INT EntryItemIn
 UINT CRootTable:: EraseAllBlock(){
 
 	UINT Status= Success_State;
-	UINT BaseFID[8];
+	BYTE BaseFID[8];
 	BYTE CE, CH, ChipIndex;
 	UINT Entry, Address, ChipAddress=0, BlockIndex, PseudoBlockStart;
 	BYTE  EraseStatus, PageSEC, RetryCnt = 0;
