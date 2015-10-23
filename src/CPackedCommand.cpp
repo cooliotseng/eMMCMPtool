@@ -10,6 +10,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <sys/stat.h>	//read, write, open
+#include <fcntl.h>	//open
+#include <unistd.h>	//close
 //pack message function
 void PackSCSI(IN LPVOID lpInBuffer,IN UINT AccessType,OUT BYTE *PackDataBuf);
 void PackeMMC(IN LPVOID lpInBuffer,IN UINT AccessType,OUT BYTE *PackDataBuf);
@@ -27,23 +30,32 @@ CPackedCommand::~CPackedCommand() {
 	// TODO Auto-generated destructor stub
 }
 
-BOOL CPackedCommand::SendPackageCmd(LPVOID lpInBuffer,DWORD nInBufferSize,
+UINT CPackedCommand::SendPackageCmd(LPVOID lpInBuffer,DWORD nInBufferSize,
 							ULONG LBA, ULONG BufLen, BYTE *buffer,
 							UINT PackMode,
 							UINT AccessType,
 							UINT UnPackMode){
 
-	BYTE	Error_Code = 0;
+	BOOL	Error_Code = FALSE;
 	void (*PackMessage[])(IN LPVOID lpInBuffer,IN UINT AccessType,OUT BYTE *PackDataBuf)
 		= {PackSCSI, PackeMMC};
 	BOOL (*UnpackMessage[])(INOUT BYTE *DataBuffer,IN ULONG BufLen,IN BYTE *PackDataBuf)
 		= {UnPackStatus, UnPackData, UnPackReg1Byte};
 
 	enum STATE state=CMD_PHASE;
-	BOOL	stateExit = TRUE, status = FALSE;
+	UINT	status = Fail_State;
+	BOOL	stateExit = TRUE;
 	ULONG	V_Address=0x001E;
 	UINT	SCSIRetryCnt = RETRY_COUNT, eMMCRetryCnt = RETRY_COUNT;
 	BYTE	*PackBuf;
+	int fd_status,n;
+
+	fd_status = open ("/dev/vdr_test0", O_RDWR);
+	if (fd_status < 0/* || fd_1 < 0*/) {
+		perror ("Open /dev/vdr_test error! QQ!");
+		exit (1);
+	}
+
 	PackBuf=(BYTE *)malloc(sizeof(BYTE)*PACKET_BLOCK_SIZE);
 	memset(PackBuf, 0, PACKET_BLOCK_SIZE);
 //packet cmomand
@@ -56,16 +68,19 @@ BOOL CPackedCommand::SendPackageCmd(LPVOID lpInBuffer,DWORD nInBufferSize,
 			case CMD_PHASE:
 			{
 				printf("state is CMD_PHASE\n");
-				status = SendReadWriteCMD(V_Address, PACKET_BLOCK_SIZE, PackBuf, ACCESS_WRITE_DATA, 0,0,0);
+				//status = SendReadWriteCMD(V_Address, PACKET_BLOCK_SIZE, PackBuf, ACCESS_WRITE_DATA, 0,0,0);
+				n = write (fd_status, PackBuf, PACKET_BLOCK_SIZE);
+
 				// Always Sent 512Byte Command From PackBuf to FW
-				if(status == FALSE)
+				if(n < 0)
 				{
 					SCSIRetryCnt--;
 					state = CMD_PHASE;
 					if(SCSIRetryCnt == 0 )
 					{
+						close(fd_status);
 						free(PackBuf);
-						return FALSE;
+						return Fail_State;
 					}
 					break;
 				}
@@ -81,16 +96,20 @@ BOOL CPackedCommand::SendPackageCmd(LPVOID lpInBuffer,DWORD nInBufferSize,
 			case DATA_PHASE:
 			{
 				printf("state is DATA_PHASE\n");
-				status = SendReadWriteCMD(V_Address, BufLen, buffer, AccessType, 0,0,0);
+
+				status = SendReadWriteCMD(BufLen, buffer, AccessType);
+
+				//status = 1;
 				// Get/Sent 64KByte(Max) Data Through buffer From/To FW
-				if(status == FALSE)
+				if(status == Fail_State)
 				{
 					SCSIRetryCnt--;
 					state = DATA_PHASE;
 					if(SCSIRetryCnt == 0 )
 					{
+						close(fd_status);
 						free(PackBuf);
-						return FALSE;
+						return Fail_State;
 					}
 					break;
 				}
@@ -103,16 +122,19 @@ BOOL CPackedCommand::SendPackageCmd(LPVOID lpInBuffer,DWORD nInBufferSize,
 			case STATUS_PHASE:
 			{
 				printf("state is STATUS_PHASE\n");
-				status = SendReadWriteCMD(V_Address, PACKET_BLOCK_SIZE, PackBuf, ACCESS_READ_DATA, 0,0,0);
+				//status = SendReadWriteCMD(V_Address, PACKET_BLOCK_SIZE, PackBuf, ACCESS_READ_DATA, 0,0,0);
+				n = read(fd_status, PackBuf, PACKET_BLOCK_SIZE);
+
 				// Always Get 512Byte Status From FW to PackBuf
-				if(status == FALSE)
+				if(n < 0 )
 				{
 					SCSIRetryCnt--;
 					state = STATUS_PHASE;
 					if(SCSIRetryCnt == 0 )
 					{
+						close(fd_status);
 						free(PackBuf);
-						return FALSE;
+						return Fail_State;
 					}
 					break;
 				}
@@ -127,8 +149,9 @@ BOOL CPackedCommand::SendPackageCmd(LPVOID lpInBuffer,DWORD nInBufferSize,
 					eMMCRetryCnt--;
 					if(eMMCRetryCnt == 0 )
 					{
+						close(fd_status);
 						free(PackBuf);
-						return FALSE;
+						return Fail_State;
 					}
 					break;
 				}
@@ -140,79 +163,43 @@ BOOL CPackedCommand::SendPackageCmd(LPVOID lpInBuffer,DWORD nInBufferSize,
 				break;
 		}
 	}
-
+	close(fd_status);
 	free(PackBuf);
-	return TRUE;
+	return Success_State;
 }
 
-BOOL CPackedCommand::SendReadWriteCMD(ULONG LBA, ULONG BufLen, BYTE *buffer,UINT AccessType,BYTE Lun = 0,BYTE adapter_id = 0, BYTE target_id = 0)
+UINT CPackedCommand::SendReadWriteCMD(ULONG BufLen, BYTE *buffer,UINT AccessType)
 {
 	//printf("this is CeMMCDeviceIO:%s SCSIRead:%d\n",&mSymbolicname,this);
-	SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-	BOOL status = 0;
-	ULONG OutBufferlength = 0, InBufferlength = 0,returned = 0;
-	WORD BlockNum=0;
-/*
-	BlockNum = (WORD)((BufLen+511)/512);
-	ZeroMemory(&sptwb,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
-	sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
-	sptwb.spt.PathId = adapter_id;
-	sptwb.spt.TargetId = target_id;
-	sptwb.spt.Lun = 0;
-	sptwb.spt.CdbLength = 10;
-	sptwb.spt.SenseInfoLength = 24;
-	sptwb.spt.DataTransferLength = BlockNum*512; // BufLen;
-	sptwb.spt.TimeOutValue = 30;
-	sptwb.spt.DataBufferOffset =
-   			offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf);
-	sptwb.spt.SenseInfoOffset =
-       		offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucSenseBuf);
+	ULONG OutBufferlength = 0, Datalength = 0,returned = 0;
+	int fd_RW;
+	BYTE TMPBuf[512]={0};
+	fd_RW = open ("/dev/vdr_test1", O_RDWR);
 
-	sptwb.spt.Cdb[2] = HIBYTE(HIWORD(LBA));
-	sptwb.spt.Cdb[3] = LOBYTE(HIWORD(LBA));
-	sptwb.spt.Cdb[4] = HIBYTE(LOWORD(LBA));
-	sptwb.spt.Cdb[5] = LOBYTE(LOWORD(LBA));
-	sptwb.spt.Cdb[6] = 0;
-	sptwb.spt.Cdb[7] = HIBYTE(BlockNum);
-	sptwb.spt.Cdb[8] = LOBYTE(BlockNum);
-	sptwb.spt.Cdb[9] = 0;
+	if (fd_RW < 0) {
+		perror ("Open /dev/vdr_test error! QQ!");
+		exit (1);
+	}
 
-	OutBufferlength = offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf) +
-       		sptwb.spt.DataTransferLength;
-*/
 	if(AccessType == ACCESS_READ_DATA)
 	{
-
-		InBufferlength = offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf);
-
-	}else{
-
-		memcpy(sptwb.ucDataBuf, buffer, sptwb.spt.DataTransferLength);
-
-		InBufferlength = OutBufferlength;
-
-	}
-/*
-	status = DeviceIoControl(DiskPath,
-                             IOCTL_SCSI_PASS_THROUGH,
-                             &sptwb,
-                             InBufferlength,
-                             &sptwb,
-                             OutBufferlength,
-                             &returned,
-                             FALSE);
-*/
-	if ( (status) && (!sptwb.spt.ScsiStatus) )
-	{
-		if(AccessType == ACCESS_READ_DATA)
-		{
-			memcpy(buffer, sptwb.ucDataBuf, BufLen);
+		if(BufLen<512){
+			Datalength = read(fd_RW, TMPBuf,512);
+			memcpy(buffer,TMPBuf,BufLen);
+		}else{
+			Datalength = read(fd_RW, buffer,BufLen);
 		}
 
-		return TRUE;
+	}else{
+		Datalength = write(fd_RW, buffer,BufLen);
 	}
-	else
-		return FALSE;
+
+	close (fd_RW);
+	if (Datalength > 0){
+		return Success_State;
+	}else{
+		return Fail_State;
+	}
 }
 
 void PackSCSI(IN LPVOID lpInBuffer, IN UINT AccessType,OUT BYTE *PackDataBuf)

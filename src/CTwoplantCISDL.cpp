@@ -115,7 +115,7 @@ UINT CTwoplantCISDL::Execute(SettingConfgInfo *pCurSettingConfgInfo,
 	TxDataBuf=(BYTE *)malloc(sizeof(BYTE)*ISPTotalByte);
 	RxDataBuf=(BYTE *)malloc(sizeof(BYTE)*ISPTotalByte);
 	memset(TxDataBuf, 0, sizeof(BYTE)*ISPTotalByte);
-	dwBytesRead=fread(&TxDataBuf,sizeof(char),BootLoaderSize,BLBinFile);
+	dwBytesRead=fread(TxDataBuf,sizeof(char),BootLoaderSize,BLBinFile);
 	dwBytesRead=fread(&TxDataBuf[BootLoaderSize],sizeof(char),ISPRealByte,ISPBinFile);
 
 // Sherlock_20140814, Put Here For "GOTO"
@@ -194,8 +194,8 @@ UINT CTwoplantCISDL::Execute(SettingConfgInfo *pCurSettingConfgInfo,
 		Status = pflash->writeEccMapBitLength(eCISADDR[i],1);
 	}
 	for(i=0; i<CISBlockNum; i++){ // Sherlock_20140815, Set CIS Block As MLC, 60-bits into PairMaps For FW Read
-		Status = pRootTable->setCellMap(eCISADDR[i],pflash,1);
-		Status = pRootTable->setEccMap(eCISADDR[i],pflash,1);
+		Status = pRootTable->setCellMap(eCISADDR[i],1);
+		Status = pRootTable->setEccMap(eCISADDR[i],1);
 	}
 	// Set eCIS BitMap Data
 

@@ -7,6 +7,7 @@
 #include <string.h>
 #include "CeMMCDriver.h"
 #include <stddef.h>
+#include <unistd.h>
 CeMMCDriver::CeMMCDriver() {
 	// TODO Auto-generated constructor stub
 	pmPackedCommand = new CPackedCommand();
@@ -18,7 +19,7 @@ CeMMCDriver::~CeMMCDriver() {
 
 UINT CeMMCDriver::readData(ULONG Address, USHORT BufLen, BYTE *buffer) {
 	// TODO Auto-generated constructor stub
-	BOOL	Status=true;
+	UINT	Status = Fail_State;
 
 	Status=AccessMemoryRead(MI_READ_DATA, 0, 0, Address, BufLen, buffer);
 
@@ -27,7 +28,7 @@ UINT CeMMCDriver::readData(ULONG Address, USHORT BufLen, BYTE *buffer) {
 
 UINT CeMMCDriver::writeData(ULONG Address, USHORT BufLen, BYTE *buffer) {
 	// TODO Auto-generated constructor stub
-	BOOL	Status=true;
+	UINT	Status = Fail_State;
 
 	Status=AccessMemoryWrite( MI_WRITE_DATA, 0, 0, Address, BufLen, buffer);
 
@@ -38,10 +39,15 @@ UINT CeMMCDriver::writeData(ULONG Address, USHORT BufLen, BYTE *buffer) {
 UINT CeMMCDriver::enableMPFunction() {
 	// TODO Auto-generated constructor stub
 	UINT	Status = Fail_State;
-	BYTE	Register;
-	Status = readData( 0x1FF8001C, 1, &Register);
+
+	BYTE	Register = 0xff;
+	Status = readData(0x1FF8001C,1,&Register);
+
+	if (Status == Fail_State){
+		return Status;
+	}
 	Register|=0x00000010 ; // Enable Write
-	Status = writeData( 0x1FF8001C, 1, &Register);
+	Status = writeData(0x1FF8001C,1,&Register);
 
 	return Status;
 }
@@ -50,8 +56,8 @@ UINT CeMMCDriver::enableMPFunction() {
 UINT CeMMCDriver::BlockAccessRead(BYTE MI_CMD, BYTE PageSec, BYTE ECC,  BYTE adapter_id, BYTE target_id, USHORT BlockPage, ULONG Address, ULONG BufLen, BYTE *buffer) {
 	// TODO Auto-generated constructor stub
 	SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-	BOOL status = 0;
-	ULONG length = 0, returned = 0;
+	UINT status = 0;
+	ULONG length = 0;
 
 	memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
 	sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
@@ -120,9 +126,8 @@ UINT CeMMCDriver::BlockAccessWrite(BYTE MI_CMD, BYTE PageSec, BYTE ECC, SPARETYP
 	UINT	Status = Fail_State;
 	//OutputDebugString(" BlockAccessWrite()");
 	SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-	BOOL status = 0;
-	ULONG length = 0, returned = 0;
 //	DWORD dwError;
+	ULONG length = 0;
 
 	memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
 	sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
@@ -171,7 +176,7 @@ UINT CeMMCDriver::BlockAccessWrite(BYTE MI_CMD, BYTE PageSec, BYTE ECC, SPARETYP
 	length = offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf) +
 					sptwb.spt.DataTransferLength;
 
-	status = pmPackedCommand->SendPackageCmd(&sptwb,
+	Status = pmPackedCommand->SendPackageCmd(&sptwb,
 											offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf),
 											Address,
 											BufLen,
@@ -187,8 +192,8 @@ UINT CeMMCDriver::BlockAccessWrite(BYTE MI_CMD, BYTE PageSec, BYTE ECC, SPARETYP
 UINT CeMMCDriver::BlockOtherRead(BYTE MI_CMD, BYTE adapter_id, BYTE target_id, ULONG Address, USHORT BufLen, BYTE *buffer) {
 	// TODO Auto-generated constructor stub
 		SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-		BOOL status = 0;
-		ULONG length = 0, returned = 0;
+		UINT status = 0;
+		ULONG length = 0;
 
 		memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
 		sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
@@ -257,9 +262,8 @@ UINT CeMMCDriver::enableReadSpareArea() {
 UINT CeMMCDriver::SpareAccessRead(BYTE MI_CMD, BYTE COLA1, BYTE COLA0, BYTE adapter_id, BYTE target_id, USHORT BlockPage, ULONG Address, USHORT BufLen, BYTE *buffer) {
 	// TODO Auto-generated constructor stub
 	SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-		BOOL status = 0;
-		ULONG length = 0, returned = 0;
-
+	UINT status = 0;
+		ULONG length = 0;
 
 		memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
 		sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
@@ -313,8 +317,8 @@ UINT CeMMCDriver::SpareAccessRead(BYTE MI_CMD, BYTE COLA1, BYTE COLA0, BYTE adap
 UINT CeMMCDriver::BlockCheckRead(BYTE MI_CMD, BYTE adapter_id, BYTE target_id, ULONG Address, USHORT BufLen, BYTE COLA1, BYTE COLA0, BYTE CFG0, BYTE CFG1, BYTE CFG2, USHORT PlaneBlock, BYTE *buffer) {
 	// TODO Auto-generated constructor stub
 	SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-	BOOL 	status = 0;
-	ULONG 	length = 0, returned = 0;
+	UINT 	status = 0;
+	ULONG 	length = 0;
 //	Sleep(10); // Sherlock_20120926, Test
 
 	memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
@@ -375,8 +379,8 @@ UINT CeMMCDriver:: AccessMemoryWrite(BYTE MI_CMD, BYTE adapter_id, BYTE target_i
 	// TODO Auto-generated constructor stub
 
 		SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-		BOOL status = 0;
-		ULONG length = 0, returned = 0;
+		UINT	status = Fail_State;
+		ULONG length = 0;
 
 		memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
 		sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
@@ -432,8 +436,8 @@ UINT CeMMCDriver::AccessMemoryRead(BYTE MI_CMD, BYTE adapter_id, BYTE target_id,
 	// TODO Auto-generated constructor stub
 
 		SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-		BOOL status = 0;
-		ULONG length = 0, returned = 0;
+		UINT	status = Fail_State;
+		ULONG length = 0;
 
 		memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
 		sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
@@ -488,8 +492,8 @@ UINT CeMMCDriver::UFDSettingRead(BYTE MI_CMD, BYTE CFG0, BYTE adapter_id, BYTE t
 	// TODO Auto-generated constructor stub
 	//	OutputDebugString(" UFDSettingRead()");
 		SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-		BOOL status = 0;
-		ULONG length = 0, returned = 0;
+		UINT status = 0;
+		ULONG length = 0;
 
 
 		memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
@@ -544,8 +548,8 @@ UINT CeMMCDriver::UFDSettingRead(BYTE MI_CMD, BYTE CFG0, BYTE adapter_id, BYTE t
 UINT CeMMCDriver::SpareAccessWrite(BYTE MI_CMD, BYTE COLA1, BYTE COLA0, BYTE adapter_id, BYTE target_id,ULONG Address, USHORT BufLen, BYTE *buffer) {
 	// TODO Auto-generated constructor stub
 	SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-	BOOL status = 0;
-	ULONG length = 0, returned = 0;
+	UINT status = 0;
+	ULONG length = 0;
 
 	memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
 	sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
@@ -605,7 +609,7 @@ UINT CeMMCDriver::MarkBad(BYTE adapter_id, BYTE target_id, ULONG Address, USHORT
 		SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
 		memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
 		UINT status = 0;
-		ULONG length = 0, returned = 0;
+		ULONG length = 0;
 
 		sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
 		sptwb.spt.PathId = adapter_id;
@@ -657,7 +661,7 @@ UINT CeMMCDriver::MarkBad(BYTE adapter_id, BYTE target_id, ULONG Address, USHORT
 
 UINT CeMMCDriver::EraseBlock(ULONG Address, BYTE *buffer) {
 	// TODO Auto-generated constructor stub
-	BOOL Status=true;
+	UINT Status=0;
 
 	Status=BlockOtherRead(MI_BLOCK_ERASE, 0, 0, Address, 1, buffer);
 
@@ -667,8 +671,8 @@ UINT CeMMCDriver::EraseBlock(ULONG Address, BYTE *buffer) {
 UINT CeMMCDriver::sendSetCommand(VendorCMD VCMD, BYTE *buffer) {
 	// TODO Auto-generated constructor stub
 	SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-		BOOL status = 0;
-		ULONG length = 0, returned = 0;
+	UINT status = 0;
+		ULONG length = 0;
 
 		memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
 		sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
@@ -725,7 +729,7 @@ UINT CeMMCDriver::sendSetCommand(VendorCMD VCMD, BYTE *buffer) {
 												sptwb.spt.DataTransferLength,//VCMD.BufLen, Sherlock_20140710
 												buffer,
 												PACK_EMMC,
-												ACCESS_WRITE_DATA,
+												ACCESS_SET_INFO,
 												UNPACK_STATUS);
 		return status;
 
@@ -735,8 +739,8 @@ UINT CeMMCDriver::sendSetCommand(VendorCMD VCMD, BYTE *buffer) {
 UINT CeMMCDriver::sendGetCommand(VendorCMD VCMD, BYTE *buffer) {
 	// TODO Auto-generated constructor stub
 	SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-	BOOL status = 0;
-	ULONG length = 0, returned = 0;
+	UINT status = 0;
+	ULONG length = 0;
 
 	memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
 	sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
@@ -801,8 +805,8 @@ UINT CeMMCDriver::MultiPlaneRead(BYTE MI_CMD, BYTE PageSec, BYTE ECC,  BYTE adap
 	// TODO Auto-generated constructor stub
 
 	SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-	BOOL status = 0;
-	ULONG length = 0, returned = 0;
+	UINT status = 0;
+	ULONG length = 0;
 
 	memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
 	sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
@@ -858,8 +862,8 @@ UINT CeMMCDriver::MultiPlaneRead(BYTE MI_CMD, BYTE PageSec, BYTE ECC,  BYTE adap
 UINT CeMMCDriver::MultiPlaneWrite(BYTE MI_CMD, BYTE PageSec, BYTE ECC, SPARETYPE Spare,  BYTE adapter_id, BYTE target_id, ULONG Address, ULONG BufLen, BYTE *buffer) {
 	// TODO Auto-generated constructor stub
 	SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-		BOOL status = 0;
-		ULONG length = 0, returned = 0;
+	UINT status = 0;
+		ULONG length = 0;
 	//	DWORD dwError;
 
 		memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
@@ -925,8 +929,8 @@ UINT CeMMCDriver::MultiPlaneWrite(BYTE MI_CMD, BYTE PageSec, BYTE ECC, SPARETYPE
 UINT CeMMCDriver::SetInfoWriteCMD(BYTE adapter_id, BYTE target_id, VendorCMD VCMD, BYTE *buffer) {
 	// TODO Auto-generated constructor stub
 		SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-		BOOL status = 0;
-		ULONG length = 0, returned = 0;
+		UINT status = 0;
+		ULONG length = 0;
 
 		memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
 		sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
@@ -994,8 +998,8 @@ UINT CeMMCDriver::UFDSettingWrite(BYTE MI_CMD, BYTE CFG0, BYTE adapter_id, BYTE 
 {
 //	OutputDebugString(" UFDSettingWrite()");
 	SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-	BOOL status = 0;
-	ULONG length = 0, returned = 0;
+	UINT status = 0;
+	ULONG length = 0;
 
 	memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
 	sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
@@ -1026,8 +1030,8 @@ UINT CeMMCDriver::UFDSettingWrite(BYTE MI_CMD, BYTE CFG0, BYTE adapter_id, BYTE 
 	sptwb.spt.Cdb[5] = LOBYTE(LOWORD(Address));
 	sptwb.spt.Cdb[6] = MI_CMD;
 
-		sptwb.spt.Cdb[7] = HIBYTE((BufLen/512));
-		sptwb.spt.Cdb[8] = LOBYTE((BufLen/512));
+	sptwb.spt.Cdb[7] = HIBYTE((BufLen/512));
+	sptwb.spt.Cdb[8] = LOBYTE((BufLen/512));
 
 
 
@@ -1036,7 +1040,7 @@ UINT CeMMCDriver::UFDSettingWrite(BYTE MI_CMD, BYTE CFG0, BYTE adapter_id, BYTE 
 
 	sptwb.spt.ScsiStatus = 1;	 // Sherlock_20121130, Add SCSI Protection For Multi-Device
 
-	memcpy(sptwb.ucDataBuf, buffer, sptwb.spt.DataTransferLength);
+	memcpy(sptwb.ucDataBuf, buffer,sptwb.spt.DataTransferLength);
 
 
 	status = pmPackedCommand->SendPackageCmd(&sptwb,
@@ -1044,7 +1048,7 @@ UINT CeMMCDriver::UFDSettingWrite(BYTE MI_CMD, BYTE CFG0, BYTE adapter_id, BYTE 
 											Address,
 											BufLen,
 											buffer,
-											PACK_SCSI,
+											PACK_EMMC,
 											ACCESS_WRITE_DATA,
 											UNPACK_STATUS);
 	return status;
@@ -1056,8 +1060,8 @@ UINT CeMMCDriver::SendTestUnitReady(BYTE Lun, BYTE adapter_id, BYTE target_id, B
 {
 	cout<<" SendTestUnitReady()"<<endl;
     SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-    BOOL status = 0;
-    ULONG length = 0, returned = 0;
+    UINT status = 0;
+    ULONG length = 0;
 
     memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
     sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
@@ -1086,11 +1090,360 @@ UINT CeMMCDriver::SendTestUnitReady(BYTE Lun, BYTE adapter_id, BYTE target_id, B
 											PACK_EMMC,
 											ACCESS_READ_INFO,
 											UNPACK_DATA);
+	return status;
+}
 
-	if ( (status) )//&& (!sptwb.spt.ScsiStatus) )
+UINT CeMMCDriver::ReadFlashID(BYTE CE,BYTE *buffer)
+{
+	UINT status = 0;
+
+	return status;
+}
+
+UINT CeMMCDriver::FillMainFIFO(BYTE MI_CMD, ULONG BufLen, BYTE *buffer)
+{
+	SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
+	UINT status = 0;
+	ULONG length = 0;
+
+	memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
+	sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
+	sptwb.spt.PathId = 0;
+	sptwb.spt.TargetId = 0;
+	sptwb.spt.Lun = 0;
+	sptwb.spt.CdbLength = 16;
+	sptwb.spt.SenseInfoLength = 24;
+
+	sptwb.spt.DataIn = SCSI_IOCTL_DATA_OUT;
+
+	sptwb.spt.DataTransferLength = BufLen;
+	sptwb.spt.TimeOutValue = 3;
+	sptwb.spt.DataBufferOffset = offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf);
+	sptwb.spt.SenseInfoOffset = offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucSenseBuf);
+
+	sptwb.spt.Cdb[0] = SCSI_VLIVENDOR;
+	sptwb.spt.Cdb[1] = VDR_SORTING;
+
+	sptwb.spt.Cdb[2] = 0;
+	sptwb.spt.Cdb[3] = 0;
+	sptwb.spt.Cdb[4] = 0;
+	sptwb.spt.Cdb[5] = 0;
+
+	sptwb.spt.Cdb[6] = MI_CMD;
+//return 1;
+
+	sptwb.spt.ScsiStatus = 1;    // Sherlock_20121130, Add SCSI Protection For Multi-Device
+
+	if(BufLen != 32*1024)
+	{	// Protection, Must Be 32K
+		return false;
+	}
+
+	memcpy(sptwb.ucDataBuf, buffer, sptwb.spt.DataTransferLength);
+
+	length = offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf) +
+       		sptwb.spt.DataTransferLength;
+
+	status = pmPackedCommand->SendPackageCmd(	&sptwb,
+												offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf),
+												0,//Address,
+												BufLen,
+												buffer,
+												PACK_SCSI,
+												ACCESS_WRITE_DATA,
+												UNPACK_STATUS);
+
+	return status;
+
+}
+UINT CeMMCDriver::MLCVBWrite(BYTE MI_CMD, WORD BlockAddr, WORD LunOffset)//, USHORT OldEraseCnt)//,  WORD PageAddr, ULONG BufLen, LPBYTE buffer)
+{
+	SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
+	UINT status = 0;
+	ULONG length = 0;
+	memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
+	sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
+	sptwb.spt.PathId = 0;
+	sptwb.spt.TargetId = 0;
+	sptwb.spt.Lun = 0;
+	sptwb.spt.CdbLength = 16;
+	sptwb.spt.SenseInfoLength = 24;
+
+	sptwb.spt.DataIn = SCSI_IOCTL_DATA_OUT;
+
+	sptwb.spt.DataTransferLength = 0;
+	sptwb.spt.TimeOutValue = 6;
+	sptwb.spt.DataBufferOffset = offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf);
+	sptwb.spt.SenseInfoOffset = offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucSenseBuf);
+
+	sptwb.spt.Cdb[0] = SCSI_VLIVENDOR;
+	sptwb.spt.Cdb[1] = VDR_SORTING;
+
+	//sptwb.spt.Cdb[2] = HIBYTE(BlockAddr2);
+	//sptwb.spt.Cdb[3] = LOBYTE(BlockAddr2);
+	sptwb.spt.Cdb[2] = 0;
+	sptwb.spt.Cdb[3] = 0;
+	sptwb.spt.Cdb[4] = HIBYTE(BlockAddr);
+	sptwb.spt.Cdb[5] = LOBYTE(BlockAddr);
+
+	sptwb.spt.Cdb[6] = MI_CMD;
+
+	sptwb.spt.Cdb[7] = HIBYTE(LunOffset);
+	sptwb.spt.Cdb[8] = LOBYTE(LunOffset);
+
+
+	sptwb.spt.ScsiStatus = 1;    // Sherlock_20121130, Add SCSI Protection For Multi-Device
+
+	length = offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf) +
+       		sptwb.spt.DataTransferLength;
+
+	status = pmPackedCommand->SendPackageCmd(	&sptwb,
+												offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf),
+												BlockAddr,
+												0,//BufLen,
+												NULL,//buffer,
+												PACK_SCSI,
+												ACCESS_CONTROL,
+												UNPACK_STATUS);
+	return status;
+
+}
+
+
+
+UINT CeMMCDriver::BlockMarkWrite(BYTE MI_CMD, BYTE adapter_id, BYTE target_id, ULONG Address, USHORT BufLen, BYTE LEN0, BYTE CFG0, BYTE CFG1, BYTE *buffer)
+{
+
+	SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
+	UINT status = 0;
+	ULONG length = 0;
+
+	memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
+	sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
+	sptwb.spt.PathId = adapter_id;
+	sptwb.spt.TargetId = target_id;
+	sptwb.spt.Lun = 0;
+	sptwb.spt.CdbLength = 16;
+	sptwb.spt.SenseInfoLength = 24;
+	sptwb.spt.DataIn = SCSI_IOCTL_DATA_IN;
+	sptwb.spt.DataTransferLength = BufLen;
+	sptwb.spt.TimeOutValue = 3;
+	sptwb.spt.DataBufferOffset =
+   			offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf);
+	sptwb.spt.SenseInfoOffset =
+       		offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucSenseBuf);
+
+	sptwb.spt.Cdb[0] = SCSI_VLIVENDOR;
+	sptwb.spt.Cdb[1] = VDR_BLK_MARK;
+
+	sptwb.spt.Cdb[2] = HIBYTE(HIWORD(Address));
+	sptwb.spt.Cdb[3] = LOBYTE(HIWORD(Address));
+	sptwb.spt.Cdb[4] = HIBYTE(LOWORD(Address));
+	sptwb.spt.Cdb[5] = LOBYTE(LOWORD(Address));
+
+
+	sptwb.spt.Cdb[6] = MI_CMD;
+
+	sptwb.spt.Cdb[8] = LEN0;
+
+	sptwb.spt.Cdb[11] = CFG0;
+	sptwb.spt.Cdb[12] = CFG1;
+
+
+	memcpy(sptwb.ucDataBuf, buffer, sptwb.spt.DataTransferLength);
+
+	length = offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf) +
+					sptwb.spt.DataTransferLength;
+
+	status = pmPackedCommand->SendPackageCmd(	&sptwb,
+												offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf),
+												Address,
+												BufLen,
+												buffer,
+												PACK_SCSI,
+												ACCESS_CONTROL,
+												UNPACK_STATUS);
+	return status;
+
+}
+
+UINT CeMMCDriver::BlockCheckECC(BYTE MI_CMD, BYTE CE, BYTE CH, WORD BlockAddr, BYTE Mode, USHORT BufLen, BYTE *buffer)
+{	// Sherlock_20130205 1
+	SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
+	UINT 	status = 0;
+	ULONG 	length = 0;
+
+	memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
+	sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
+	sptwb.spt.PathId = 0;
+	sptwb.spt.TargetId = 0;
+	sptwb.spt.Lun = 0;
+	sptwb.spt.CdbLength = 16;
+	sptwb.spt.SenseInfoLength = 24;
+	sptwb.spt.DataIn = SCSI_IOCTL_DATA_IN;
+	sptwb.spt.DataTransferLength = BufLen;
+	sptwb.spt.TimeOutValue = 30;
+	sptwb.spt.DataBufferOffset = offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf);
+	sptwb.spt.SenseInfoOffset =  offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucSenseBuf);
+
+	sptwb.spt.Cdb[0] = SCSI_VLIVENDOR;
+	sptwb.spt.Cdb[1] = VDR_SORTING;
+
+	sptwb.spt.Cdb[2] = (BYTE)((CE<<4)|CH);
+	sptwb.spt.Cdb[3] = Mode;
+	sptwb.spt.Cdb[4] = HIBYTE(BlockAddr);
+	sptwb.spt.Cdb[5] = LOBYTE(BlockAddr);
+
+	sptwb.spt.Cdb[6] = MI_CMD;
+
+	sptwb.spt.ScsiStatus = 1;	 // Sherlock_20121130, Add SCSI Protection For Multi-Device
+
+//	Sleep(10);		// Sherlock_20130306, Add Delay For BlockWrite & BlockRead, And L85 Must Delay
+
+	length = offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf) +
+					sptwb.spt.DataTransferLength;
+
+	status = pmPackedCommand->SendPackageCmd(	&sptwb,
+												offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf),
+												BlockAddr,
+												BufLen,
+												buffer,
+												PACK_SCSI,
+												ACCESS_READ_INFO,
+												UNPACK_DATA);
+	return status;
+
+}
+
+UINT CeMMCDriver::SetThreeSLCVB(BYTE MI_CMD)//, BYTE CE, BYTE CH, WORD BlockAddr, BYTE Mode, USHORT BufLen, LPBYTE buffer)
+{	// Sherlock_20130205 2
+	SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
+	UINT 	status = 0;
+	ULONG 	length = 0;
+
+	usleep(10000); // Sherlock_20120926, Test
+
+	memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
+	sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
+	sptwb.spt.PathId = 0;
+	sptwb.spt.TargetId = 0;
+	sptwb.spt.Lun = 0;
+	sptwb.spt.CdbLength = 16;
+	sptwb.spt.SenseInfoLength = 24;
+	sptwb.spt.DataIn = SCSI_IOCTL_DATA_IN;
+	sptwb.spt.DataTransferLength = 0;//BufLen;
+	sptwb.spt.TimeOutValue = 30;
+	sptwb.spt.DataBufferOffset = offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf);
+	sptwb.spt.SenseInfoOffset =  offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucSenseBuf);
+
+	sptwb.spt.Cdb[0] = SCSI_VLIVENDOR;
+	sptwb.spt.Cdb[1] = VDR_SORTING;
+
+	sptwb.spt.Cdb[2] = 0; // (BYTE)((CE<<4)|CH);
+	sptwb.spt.Cdb[3] = 0; // Mode;
+	sptwb.spt.Cdb[4] = 0; // HIBYTE(BlockAddr);
+	sptwb.spt.Cdb[5] = 0; // LOBYTE(BlockAddr);
+
+	sptwb.spt.Cdb[6] = MI_CMD;
+
+	sptwb.spt.ScsiStatus = 1;	 // Sherlock_20121130, Add SCSI Protection For Multi-Device
+
+	length = offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf) +
+					sptwb.spt.DataTransferLength;
+/*
+	status = DeviceIoControl(	DiskPath,
+							IOCTL_SCSI_PASS_THROUGH,
+							&sptwb,
+							offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf),
+							&sptwb,
+							length,
+							&returned,
+							FALSE);
+
+	if ( (status) && (!sptwb.spt.ScsiStatus) )
 	{
+//		memcpy(buffer, sptwb.ucDataBuf, BufLen);
 		return true;
 	}
 	else
-	    return false;
+	{
+		if(!status)
+			OutputDebugString("status err");
+		if(sptwb.spt.ScsiStatus)
+			OutputDebugString("SCSI status err");
+		DWORD ErrorCode=GetLastError();
+		StrTmp.Format("ErrorCode=%x", ErrorCode);
+		OutputDebugString(StrTmp);
+		return false;
+	}*/
+	return 0;
+}
+
+UINT CeMMCDriver::CopySLCtoTLC(BYTE MI_CMD, BYTE CE, BYTE CH, WORD BlockAddr, BYTE Mode, WORD LunOffset)//, USHORT BufLen, LPBYTE buffer)
+{	// Sherlock_20130205 3
+	SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
+	UINT 	status = 0;
+	ULONG 	length = 0;
+
+	usleep(10000); // Sherlock_20120926, Test
+
+
+	memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
+	sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
+	sptwb.spt.PathId = 0;
+	sptwb.spt.TargetId = 0;
+	sptwb.spt.Lun = 0;
+	sptwb.spt.CdbLength = 16;
+	sptwb.spt.SenseInfoLength = 24;
+	sptwb.spt.DataIn = SCSI_IOCTL_DATA_IN;
+	sptwb.spt.DataTransferLength = 0;//BufLen;
+	sptwb.spt.TimeOutValue = 30;
+	sptwb.spt.DataBufferOffset = offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf);
+	sptwb.spt.SenseInfoOffset =  offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucSenseBuf);
+
+	sptwb.spt.Cdb[0] = SCSI_VLIVENDOR;
+	sptwb.spt.Cdb[1] = VDR_SORTING;
+
+	sptwb.spt.Cdb[2] = 0; //(BYTE)((CE<<4)|CH);
+	sptwb.spt.Cdb[3] = Mode;
+	sptwb.spt.Cdb[4] = HIBYTE(BlockAddr);
+	sptwb.spt.Cdb[5] = LOBYTE(BlockAddr);
+
+	sptwb.spt.Cdb[6] = MI_CMD;
+
+	sptwb.spt.Cdb[7] = HIBYTE(LunOffset);
+	sptwb.spt.Cdb[8] = LOBYTE(LunOffset);
+
+	sptwb.spt.ScsiStatus = 1;	 // Sherlock_20121130, Add SCSI Protection For Multi-Device
+
+	length = offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf) +
+					sptwb.spt.DataTransferLength;
+/*
+	status = DeviceIoControl(	DiskPath,
+							IOCTL_SCSI_PASS_THROUGH,
+							&sptwb,
+							offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf),
+							&sptwb,
+							length,
+							&returned,
+							FALSE);
+
+	if ( (status) && (!sptwb.spt.ScsiStatus) )
+	{
+//		memcpy(buffer, sptwb.ucDataBuf, BufLen);
+		return true;
+	}
+	else
+	{
+		if(!status)
+			OutputDebugString("status err");
+		if(sptwb.spt.ScsiStatus)
+			OutputDebugString("SCSI status err");
+		DWORD ErrorCode=GetLastError();
+		StrTmp.Format("ErrorCode=%x", ErrorCode);
+		OutputDebugString(StrTmp);
+		return false;
+	}
+	*/
+	return 0;
 }

@@ -35,6 +35,13 @@ public:
 	virtual UINT SetInfoWriteCMD(BYTE adapter_id, BYTE target_id, VendorCMD VCMD, BYTE *buffer) = 0;
 	virtual UINT UFDSettingWrite(BYTE MI_CMD, BYTE CFG0, BYTE adapter_id, BYTE target_id,ULONG Address, USHORT BufLen, BYTE *buffer) = 0;
 	virtual UINT SendTestUnitReady(BYTE Lun, BYTE adapter_id, BYTE target_id, BYTE *pScsiStatus) = 0;
+	virtual UINT ReadFlashID(BYTE CE,BYTE *buffer) = 0;
+	virtual UINT BlockMarkWrite(BYTE MI_CMD, BYTE adapter_id, BYTE target_id, ULONG Address, USHORT BufLen, BYTE LEN0, BYTE CFG0, BYTE CFG1, BYTE *buffer) = 0;
+	virtual UINT CopySLCtoTLC(BYTE MI_CMD, BYTE CE, BYTE CH, WORD BlockAddr, BYTE Mode, WORD LunOffset) = 0;
+	virtual UINT MLCVBWrite(BYTE MI_CMD, WORD BlockAddr, WORD LunOffset) = 0;
+	virtual UINT FillMainFIFO(BYTE MI_CMD, ULONG BufLen, BYTE *buffer) = 0;
+	virtual UINT BlockCheckECC(BYTE MI_CMD, BYTE CE, BYTE CH, WORD BlockAddr, BYTE Mode, USHORT BufLen, BYTE *buffer) = 0;
+	virtual UINT SetThreeSLCVB(BYTE MI_CMD) = 0;
 
 };
 

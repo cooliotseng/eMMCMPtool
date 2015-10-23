@@ -3,6 +3,71 @@
 #include <stdlib.h>
 #include <string.h>
 #include <iostream>
+#include <sstream>
+#include <string>
+
+extern void OpeneMMCTest(){
+	int fd_0, fd_1;
+	char Shellbuf[4096];
+	string tShellbuf ;
+	string mCmdIndexString;
+	stringstream streamIndex;
+	char *majornum;
+	FILE *pp;
+	cout <<"insmod vdr_test driver" <<endl;
+	if((pp=popen("lsmod | grep mmc_block","r")) == NULL){
+				std::cout << "Popen() error: " << std::endl;
+	}
+
+	if(fgets(Shellbuf,sizeof(Shellbuf),pp)!=NULL){
+		system("echo vli | sudo -S rmmod mmc_block");
+
+	}
+
+	if((pp=popen("cat /proc/devices | grep vdr_test","r")) == NULL){
+		std::cout << "Popen() error: " << std::endl;
+	}
+	majornum = strtok(fgets(Shellbuf,sizeof(Shellbuf),pp)," ");
+
+	if(majornum == NULL){
+		system("echo vli | sudo -S insmod mmc_test.ko");
+	}
+
+	if((pp=popen("ls /dev/vdr_test*","r")) == NULL){
+		std::cout << "Popen() error: " << std::endl;
+	}
+
+	if(fgets(Shellbuf,sizeof(Shellbuf),pp)==NULL){
+
+		if((pp=popen("cat /proc/devices | grep vdr_test","r")) == NULL){
+						std::cout << "Popen() error: " << std::endl;
+			}
+
+			majornum = strtok(fgets(Shellbuf,sizeof(Shellbuf),pp)," ");
+
+			for(int i=0;i<2;i++){
+				streamIndex.str("");
+				streamIndex << i;
+				tShellbuf.assign("echo vli | sudo -S mknod /dev/vdr_test");
+				tShellbuf.append(streamIndex.str()).append(" ")
+						.append("c ")
+						.append(majornum).append(" ")
+						.append(streamIndex.str());
+				system(tShellbuf.c_str());
+			}
+	}
+	system("echo vli | sudo -S chown vli:vli /dev/vdr_test*");
+	pclose(pp);
+}
+
+extern void CloseMMCTest(){
+	system("ls /dev/vdr_test*");
+	system("echo vli | sudo -S rm -f  /dev/vdr_test*");
+	system("echo vli | sudo -S rmmod mmc_test");
+	system("echo vli | sudo -S insmod /lib/modules/3.19.3/kernel/drivers/mmc/card/mmc_block.ko");
+	cout <<"remove vdr_test driver" <<endl;
+}
+
 
 extern ULONG FileSize(FILE *fp) {
 
@@ -291,7 +356,7 @@ extern SettingConfgInfo * initCurSettingConfgInfo() {
 
 	SettingConfgInfo *CurSettingConfgInfo= new SettingConfgInfo();
 
-	CurSettingConfgInfo->FWFileName.assign("FW_BANK_20150422-1.bin");
+	CurSettingConfgInfo->FWFileName.assign("FW_CODE_RELEASE_20150810_1.bin");
     CurSettingConfgInfo->USB_VID.assign("0BDA");
     CurSettingConfgInfo->USB_PID.assign("0307");
     CurSettingConfgInfo->HUB_VID.assign("2109");
@@ -300,21 +365,23 @@ extern SettingConfgInfo * initCurSettingConfgInfo() {
     CurSettingConfgInfo->ImageType[1]=129;
     CurSettingConfgInfo->ImageType[2]=131;
     CurSettingConfgInfo->ImageType[3]=129;
-    CurSettingConfgInfo->FormatLunBitMap=1;
+    CurSettingConfgInfo->FormatLunBitMap=0;
     CurSettingConfgInfo->PassWordStr.assign("0123456789ABCDEF");
     CurSettingConfgInfo->CIS_Mark.assign("VD3CIS");
     CurSettingConfgInfo->Inquiry_VID.assign("Generic");
     CurSettingConfgInfo->Inquiry_PID.assign("USB3 Flash Disk");
     CurSettingConfgInfo->ProductStr.assign("VL752");
     CurSettingConfgInfo->ManufactureStr.assign("VIA Labs, Inc");
-    CurSettingConfgInfo->TestProcedureMask=56;
+    CurSettingConfgInfo->TestProcedureMask=2104;
     CurSettingConfgInfo->TargetStoreMedia=2;
-    CurSettingConfgInfo->LunTypeBitMap = 2420113489;
+    CurSettingConfgInfo->LunTypeBitMap = 2420244560;
     CurSettingConfgInfo->LunTypeBitMap2=24;
-    CurSettingConfgInfo->BootCodeFileName.assign("FW_BANK_20150422-1.bin");
+    CurSettingConfgInfo->BootCodeFileName.assign("FW_CODE_RELEASE_20150810_1.bin");
     CurSettingConfgInfo->VenCIDFileName.assign("");
     CurSettingConfgInfo->VenCSDFileName.assign("");
     CurSettingConfgInfo->ExtCSDFileName.assign("extCSD.bin");
+    CurSettingConfgInfo->ForceCE = 4;
+	CurSettingConfgInfo->ForceCH = 1;
     CurSettingConfgInfo->SupportFlashIndex=4294967295;
     CurSettingConfgInfo->U2HUB_VIDPID=554248210;
     CurSettingConfgInfo->U3HUB_VIDPID=554240018;
@@ -340,7 +407,7 @@ extern SettingConfgInfo * initCurSettingConfgInfo() {
     CurSettingConfgInfo->CisData.LunCapacity[0]=61440000;
     BYTE   tLunAttribute[4] = {96,96,16,96};
     memcpy( &CurSettingConfgInfo->CisData.LunAttribute,&tLunAttribute,sizeof(BYTE)*4);
-    UINT   tLunType[4] = {0,129,2,131};
+    BYTE   tLunType[4] = {128,129,2,131};
     memcpy( &CurSettingConfgInfo->CisData.LunType,&tLunType,sizeof(BYTE)*4);
     CurSettingConfgInfo->CisData.SysStartLBA=4660;
     CurSettingConfgInfo->CisData.SysCapacity=22136;
@@ -359,8 +426,8 @@ extern SettingConfgInfo * initCurSettingConfgInfo() {
 	BYTE   tReserved2[8] = {0,130,0,0,1,1,2,0};
 	memcpy( &CurSettingConfgInfo->CisData.Reserved2,&tReserved2,sizeof(BYTE)*8);
 	//UINT   tFLH_ID[8] = {152,222,148,147,118,215,8,4};
-	UINT   tFLH_ID[8] = {152,222,148,147,118,80,8,4};
-    memcpy( &CurSettingConfgInfo->CisDataEx.FLH_FwScheme.FLH_ID,&tFLH_ID,sizeof(UINT)*8);
+	BYTE   tFLH_ID[8] = {152,222,148,147,118,80,8,4};
+    memcpy( &CurSettingConfgInfo->CisDataEx.FLH_FwScheme.FLH_ID,&tFLH_ID,sizeof(BYTE)*8);
     CurSettingConfgInfo->CisDataEx.FLH_FwScheme.Model0=101;
     CurSettingConfgInfo->CisDataEx.FLH_FwScheme.Model1=255;
     CurSettingConfgInfo->CisDataEx.FLH_FwScheme.Model2=49;

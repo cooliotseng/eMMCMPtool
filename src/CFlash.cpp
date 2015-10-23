@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stddef.h>
+#define FID_Chk_Len 		6
+#define MaxChipSelect 		4
+#define VT3468				0x3468	//Chip is VT3468
 CFlash::CFlash() {
 	// TODO Auto-generated constructor stub
 	pmDriver = NULL;
@@ -24,23 +27,27 @@ CFlash::CFlash() {
 
 CFlash::CFlash(IeMMCDriver *pDriver,FlashStructure *tFlashStructure) {
 	// TODO Auto-generated constructor stub
-
+	UINT	Status = 0;
 	pmDriver = pDriver;
 	pmFlashStructure = new FlashStructure();
 	moldversionCISflag = -1;
 	memcpy(pmFlashStructure,tFlashStructure,sizeof(FlashStructure));
 
-	pmFlashStructure->ForceCE = 2;//coolio temp
-	if(pmFlashStructure->ForceCE!=0)
-		mChipSelectNum = pmFlashStructure->ForceCE;
-	 pmFlashStructure->ForceCH = 2; //coolio temp
-	if(pmFlashStructure->ForceCH!=0)
-		mChannelNum = pmFlashStructure->ForceCH;
-
+	//initFlashInfo();
+	
+	if(pmFlashFwScheme->InterleaveNO== 0)
+		pmFlashFwScheme->InterleaveNO = pmFlashStructure->ForceCE;		// 0x122
+	
+	if(pmFlashFwScheme->VB_Block== 0)
+		pmFlashFwScheme->VB_Block= pmFlashStructure->ForceCE * pmFlashStructure->ForceCH;	// 0x130
+	
+	if(pmFlashFwScheme->Select_VB== 0)
+		pmFlashFwScheme->Select_VB= pmFlashStructure->ForceCH;			// 0x131
+    
 	mEntryItemNum = initEntryItemNum()/8;
 
-	pmDriver->enableMPFunction();
-	pmDriver->enableReadSpareArea();
+	Status=pmDriver->enableMPFunction();
+	Status=pmDriver->enableReadSpareArea();
 }
 
 
@@ -48,6 +55,79 @@ CFlash::CFlash(IeMMCDriver *pDriver,FlashStructure *tFlashStructure) {
 CFlash::~CFlash() {
 	// TODO Auto-generated destructor stub
 }
+
+void CFlash::initFlashInfo(){
+	
+	BYTE CE=0, CH=1;
+	BYTE CE_Num=1;
+	INT  Entry=0x200, i, j, PseudoBlock = 0;
+	BYTE * buffer=new BYTE[64];
+	BYTE * F_ID=new BYTE[8];
+	UINT Status=0, PhysicalCapacity=0x200000;
+	BYTE CheckChip=true;
+	BYTE InternalChip = 1; // 3rd FID bit[1:0], Default is 1
+	BYTE	Plane = pmFlashFwScheme->SelectPlane;
+    //BaseChipID = VT3468;
+	
+	Status=pmDriver->ReadFlashID(CE, buffer); // Sherlock_20140430, Patch 3493 ROM Code Bug
+	
+	if(Status == 0)
+	{	
+		goto EndCheckFlashInfo;
+	}
+	
+	memcpy(F_ID, buffer, 8); 
+	for(j=16;j<64;j+=16)
+	{
+		if(memcmp(F_ID, buffer+j, FID_Chk_Len)==0)
+			CH++;
+		else
+			break;
+	}
+
+	do{
+		CE++;    
+		if(CE>=MaxChipSelect)   
+			break;
+		Status=pmDriver->ReadFlashID(CE, buffer); //?CE?INDEX
+		if(!Status)  
+		{
+			continue; 
+		}
+		for(j=0;j<CH;j++)
+		{
+			if(memcmp(F_ID, buffer+(j*16), FID_Chk_Len)!=0)
+				break;
+		}
+		if(j==CH)
+			CE_Num++;   
+	}while(1);  
+	CE = CE_Num;
+	
+	if(pmFlashStructure->ForceCE!=0)
+		CE=pmFlashStructure->ForceCE;
+	if(pmFlashStructure->ForceCH!=0)
+		CH=pmFlashStructure->ForceCH;
+
+	if( (pmFlashStructure->ForceCE==0) && (pmFlashStructure->ForceCH==0))
+	{
+		//Capacity
+		PhysicalCapacity = PhysicalCapacity<<(pmFlashStructure->FlashFwScheme->Model5 &0x0F);
+		PhysicalCapacity = PhysicalCapacity * (pmFlashStructure->ChipSelectNum) * (pmFlashStructure->ChannelNum);
+		pmFlashStructure->FlashFwScheme->Capacity = PhysicalCapacity;
+	}
+
+	mChipSelectNum = CE;
+	mChannelNum = CH;
+	
+	// ----- Get Flash Type -----
+
+EndCheckFlashInfo:
+	delete buffer;
+	delete F_ID;
+}
+
+
 
 void CFlash:: setoldversionCISflag() {
 	moldversionCISflag = 1;
@@ -85,7 +165,7 @@ BYTE CFlash:: getCHipVersion() {
 
 }
 
-void CFlash::getFlashID(UINT* buf) {
+void CFlash::getFlashID(BYTE* buf) {
 	// TODO Auto-generated constructor stub
 	memcpy(buf,pmFlashFwScheme->FLH_ID,8*sizeof(BYTE));
 }
@@ -193,29 +273,27 @@ UINT CFlash::setFlashSize() {
 	if(!Status)
 		return Status;
 
-	if(mBlockPage == 64) 			Register3 = (Register2 & (0xFC)) + 0; //(~(bit_1|bit_0))
-	else if(mBlockPage == 128)		Register3 = (Register2 & (0xFC)) + 1; // Set bit_0
-	else if(mBlockPage == 256)		Register3 = (Register2 & (0xFC)) + 2; // Set bit_1
-	else if(mBlockPage == 512)		Register3 = (Register2 & (0xFC)) + 3; // Set bit_1|bit_0
-	else							Register3 = Register2;				// No Match, No Change
+	if(mBlockPage == 64)
+		Register3 = (Register2 & (0xFC)) + 0; //(~(bit_1|bit_0))
+	else if(mBlockPage == 128)
+		Register3 = (Register2 & (0xFC)) + 1; // Set bit_0
+	else if(mBlockPage == 256)
+		Register3 = (Register2 & (0xFC)) + 2; // Set bit_1
+	else if(mBlockPage == 512)
+		Register3 = (Register2 & (0xFC)) + 3; // Set bit_1|bit_0
+	else
+		Register3 = Register2;				// No Match, No Change
 
-	if(mPageSize == 16*1024) 	Register3 = (Register3 & (0xF3)) + 0; // [3:2] = 00b
-	else if(mPageSize == 4*1024) Register3 = (Register3 & (0xF3)) + 4; // [3:2] = 01b
-	else if(mPageSize == 8*1024) Register3 = (Register3 & (0xF3)) + 8; // [3:2] = 10b
+	if(mPageSize == 16*1024)
+		Register3 = (Register3 & (0xF3)) + 0; // [3:2] = 00b
+	else if(mPageSize == 4*1024)
+		Register3 = (Register3 & (0xF3)) + 4; // [3:2] = 01b
+	else if(mPageSize == 8*1024)
+		Register3 = (Register3 & (0xF3)) + 8; // [3:2] = 10b
 
 	Status = writeData(Reg_FlashAccess, 1, &Register3);
 	if(!Status)
 		return Status;
-
-
-	// Sherlock_20140725, Send BlockPage For New Read Block & Spare
-	VendorCMD	VCMD;
-	memset(&VCMD, 0x00, sizeof(VendorCMD));
-
-	VCMD.OPCode = 0xEE;
-	VCMD.CFG[0] = HIBYTE(mBlockPage);
-	VCMD.CFG[1] = LOBYTE(mBlockPage);
-	Status = pmDriver->sendGetCommand(VCMD, NULL);
 
 	return Status;
 }
@@ -267,7 +345,7 @@ UINT CFlash:: DownloadVDRFw(char *FWFileName) {
 	Offset = 4;
 	for(idx=0; idx<FunctionTableCnt; idx++)
 	{
-		fseek(FWBinFile, Offset, SEEK_SET);
+		fseek(FWBinFile, Offset, 0);
 		dwBytesRead = fread(&Header,sizeof(char),8,FWBinFile);
 		FunctionTblLen[idx] = ((UINT)Header[3]<<24) | ((UINT)Header[2]<<16) | ((UINT)Header[1]<<8) | Header[0];
 		FunctionTblAdr[idx] = ((UINT)Header[7]<<24) | ((UINT)Header[6]<<16) | ((UINT)Header[5]<<8) | Header[4];
@@ -287,8 +365,8 @@ UINT CFlash:: DownloadVDRFw(char *FWFileName) {
 
 	// -- Get & DL_VDR Code -
 	VDRCodeBuf = (BYTE *)malloc(sizeof(BYTE)*VDRCodeLen);
-	fseek(FWBinFile, Offset, SEEK_SET);
-	dwBytesRead = fread(&VDRCodeBuf,sizeof(char),VDRCodeLen,FWBinFile);
+	fseek(FWBinFile, Offset, 0);
+	dwBytesRead = fread(VDRCodeBuf,sizeof(char),(UINT)VDRCodeLen,FWBinFile);
 	Status = INITISP((ULONG)0x20000000, (USHORT)VDRCodeLen, VDRCodeBuf);
 	if(!Status)
 		Status=INIT_VDR_FW_Error;
@@ -301,14 +379,16 @@ UINT CFlash:: DownloadVDRFw(char *FWFileName) {
 	{
 
  		FunctionTblBuf = (BYTE *)malloc(sizeof(BYTE)*FunctionTblLen[idx]);
- 		fseek(FWBinFile, FunctionTblOfs[idx], SEEK_SET);
-		dwBytesRead = fread(&FunctionTblBuf,sizeof(char),FunctionTblLen[idx],FWBinFile);
+ 		fseek(FWBinFile, FunctionTblOfs[idx], 0);
+		dwBytesRead = fread(FunctionTblBuf,sizeof(char),FunctionTblLen[idx],FWBinFile);
 		RemainLen = FunctionTblLen[idx];
 		RegAdrOfs = 0;
 		while(RemainLen != 0) //  For Length > 256 Bytes
 		{
-			if(RemainLen > 0x100)	TxLen = 0x100;		// Write Reg Max 0x100 Bytes
-			else					TxLen = RemainLen;
+			if(RemainLen > 0x100)
+				TxLen = 0x100;		// Write Reg Max 0x100 Bytes
+			else
+				TxLen = RemainLen;
 
 			Status = writeData((ULONG)FunctionTblAdr[idx]+RegAdrOfs, (USHORT)TxLen, FunctionTblBuf+RegAdrOfs); // Write Reg
 			RemainLen -= TxLen;
@@ -326,53 +406,56 @@ UINT CFlash:: DownloadVDRFw(char *FWFileName) {
 	return Status;
 }
 
+UINT CFlash::setEcc(BYTE ECC) {
+	UINT	TempSts = Fail_State;
+	BYTE	Register, Cnt, WaitLimit = 50;
+	// Set ECC 2608
+	TempSts = readData(0x1FF82608, 1, &Register);
+	Register = (Register & (0xFC)) + ECC; // 00b=24-bit, 01b=40-bit, 10b=60-bit
+	TempSts = writeData(0x1FF82608, 1, &Register);
 
+	// 264E|=0x70
+	TempSts = readData(0x1FF8264E, 1, &Register);
+	Register |= 0x70;
+	TempSts = writeData(0x1FF8264E, 1, &Register);
+
+	// 264F|=0x71
+	TempSts = readData(0x1FF8264F, 1, &Register);
+	Register |= 0x71;
+	TempSts = writeData(0x1FF8264F, 1, &Register);
+
+	// Wait 2105=0xF0
+	for(Cnt=0; Cnt<WaitLimit; Cnt++)
+	{
+		TempSts = readData(0x1FF82105, 1, &Register);
+		if((Register & 0x0F) == 0x00)
+			break;
+		usleep(100000);
+	}
+
+	if(Cnt == WaitLimit)
+		return Fail_State;
+
+	// 264E &=(0x70)
+	TempSts = readData(0x1FF8264E, 1, &Register);
+	Register &= (~0x70);
+	TempSts = writeData(0x1FF8264E, 1, &Register);
+
+	// 264F &=(0x70)
+	TempSts = readData(0x1FF8264F, 1, &Register);
+	Register &= (~0x70);
+	TempSts = writeData(0x1FF8264F, 1, &Register);
+
+	return TempSts;
+
+}
 
 
 UINT CFlash::resetEcc() {
 	// TODO Auto-generated constructor stub
-		UINT	TempSts = Fail_State;
-		BYTE	Register, Cnt, WaitLimit = 50;
+
 		BYTE 	ECC = pmFlashStructure->FlashFwScheme->Model3 & 0x03;
-
-		// Set ECC 2608
-		TempSts = readData(0x1FF82608, 1, &Register);
-		Register = (Register & (0xFC)) + ECC; // 00b=24-bit, 01b=40-bit, 10b=60-bit
-		TempSts = writeData(0x1FF82608, 1, &Register);
-
-		// 264E|=0x70
-		TempSts = readData(0x1FF8264E, 1, &Register);
-		Register |= 0x70;
-		TempSts = writeData(0x1FF8264E, 1, &Register);
-
-		// 264F|=0x71
-		TempSts = readData(0x1FF8264F, 1, &Register);
-		Register |= 0x71;
-		TempSts = writeData(0x1FF8264F, 1, &Register);
-
-		// Wait 2105=0xF0
-		for(Cnt=0; Cnt<WaitLimit; Cnt++)
-		{
-			TempSts = readData(0x1FF82105, 1, &Register);
-			if((Register & 0x0F) == 0x00)
-				break;
-			usleep(100000);
-		}
-
-		if(Cnt == WaitLimit)
-			return Fail_State;
-
-		// 264E &=(0x70)
-		TempSts = readData(0x1FF8264E, 1, &Register);
-		Register &= (~0x70);
-		TempSts = writeData(0x1FF8264E, 1, &Register);
-
-		// 264F &=(0x70)
-		TempSts = readData(0x1FF8264F, 1, &Register);
-		Register &= (~0x70);
-		TempSts = writeData(0x1FF8264F, 1, &Register);
-
-		return TempSts;
+		return setEcc(ECC);
 }
 
 UINT CFlash::setMultiPageAccress() {
@@ -425,13 +508,6 @@ UINT CFlash::setMultiPageAccress() {
 		return Status;
 }
 
-
-
-UINT CFlash::getFlashType() {
-	// TODO Auto-generated constructor stub
-	return mBaseFType;
-}
-
 UINT CFlash::writeTPMT() {
 	// TODO Auto-generated constructor stub
 		UINT	Status = Fail_State;
@@ -440,8 +516,8 @@ UINT CFlash::writeTPMT() {
 
 		DataH = HIBYTE(pmFlashStructure->turbopageinfo->TurboPageNUM);
 		DataL = LOBYTE(pmFlashStructure->turbopageinfo->TurboPageNUM);
-		Status = writeData( 0x1FF840A0, 1, &DataL); // Little End
-		Status = writeData(0x1FF840A1, 1, &DataH);
+		Status = writeData(0x1FF840A4, 1, &DataL); // Little End
+		Status = writeData(0x1FF840A5, 1, &DataH);
 
 		for(Index=0; Index<pmFlashStructure->turbopageinfo->TurboPageNUM; Index++)
 		{
@@ -1086,54 +1162,9 @@ UINT CFlash::WriteSpareData(BYTE COLA1, BYTE COLA0, ULONG Address, USHORT BufLen
 
 UINT CFlash::EraseBlock(ULONG Address, BYTE *buffer){
 
-	//	OutputDebugString(" BlockOtherRead()");
-		SCSI_PASS_THROUGH_WITH_BUFFERS sptwb;
-		BOOL status = 0;
-		ULONG length = 0;
-
-	//	DWORD dwError;
-		BYTE MI_CMD = MI_BLOCK_ERASE;
-		memset(&sptwb,0,sizeof(SCSI_PASS_THROUGH_WITH_BUFFERS));
-
-		sptwb.spt.Length = sizeof(SCSI_PASS_THROUGH);
-		sptwb.spt.PathId = 0;
-		sptwb.spt.TargetId = 0;
-		sptwb.spt.Lun = 0;
-		sptwb.spt.CdbLength = 16;
-		sptwb.spt.SenseInfoLength = 24;
-		sptwb.spt.DataIn = SCSI_IOCTL_DATA_IN;
-		sptwb.spt.DataTransferLength = 1;
-		sptwb.spt.TimeOutValue = 3;
-		sptwb.spt.DataBufferOffset =
-	   			offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf);
-		sptwb.spt.SenseInfoOffset =
-	      		offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucSenseBuf);
-
-		sptwb.spt.Cdb[0] = SCSI_VLIVENDOR;
-		sptwb.spt.Cdb[1] = VDR_BLOCK_OTHER;
-
-		sptwb.spt.Cdb[2] = HIBYTE(HIWORD(Address));
-		sptwb.spt.Cdb[3] = LOBYTE(HIWORD(Address));
-		sptwb.spt.Cdb[4] = HIBYTE(LOWORD(Address));
-		sptwb.spt.Cdb[5] = LOBYTE(LOWORD(Address));
-
-		sptwb.spt.Cdb[6] = MI_CMD;
-
-		sptwb.spt.ScsiStatus = 1;	 // Sherlock_20121130, Add SCSI Protection For Multi-Device
-
-		length = offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf) +
-				sptwb.spt.DataTransferLength;
-/*
-		status = pCeMMCDeviceIO->SendPackageCmd(DiskPath,
-												&sptwb,
-												offsetof(SCSI_PASS_THROUGH_WITH_BUFFERS,ucDataBuf),
-												Address,
-												BufLen,
-												buffer,
-												PACK_SCSI,
-												ACCESS_CONTROL,
-												UNPACK_REG1BYTE); // UNPACK_STATUS); Sherlock_20140812, Result Status From Byte[26]     */
-		return status;
+	UINT	Status = Fail_State;
+	Status=pmDriver->BlockOtherRead(MI_BLOCK_ERASE, 0, 0, Address, 1, buffer);
+	return Status;
 
 }
 
@@ -1324,26 +1355,111 @@ UINT CFlash::getOldVersionCISAddress(UINT *CISADDR){
 		BYTE	index, CISIdx=0, SpareBuf[6] = {0,0,0,0,0,0};
 		BYTE PlaneNum;
 		PlaneNum = 0x01 << ((pmFlashStructure->FlashFwScheme->Model6 & 0x30) >> 4);
+		UINT 	Status = Fail_State;
+		ULONG	EachTxSize = 512;
+		BYTE	BufferLen;
+		BYTE	ECC ,RetryCnt;
+		BYTE	TxDataBuf[13];
+		eMMC_CIS_INFO	eCISSetData;
+		SPARETYPE Spare;
 
-        if (moldversionCISflag == -1){
-        	moldversionCISflag = 0;
-			for(index=0; index<100; index++){ // Search 100 Blocks for CIS Block
-				Address = index * pmFlashStructure->FlashFwScheme->BlockPage;
-				TempStatus = ReadSpareData(0, 0, Address, 6, SpareBuf);
-				if((TempStatus) && (SpareBuf[0] == 0x43) && (SpareBuf[1] == 0x53)){
+		Spare.SPARE0=0x43; //'C'
+		Spare.SPARE1=0x53; //'S'
+		Spare.SPARE2=0x00; //Initial Value
+		Spare.SPARE3=0x00; //Initial Value
+		Spare.SPARE4=0x99;
+		Spare.SPARE5=0x99;
+
+		//if(PlaneNum == 2)
+		BufferLen = 13;
+
+		memset(TxDataBuf, 0,BufferLen);
+		writeData(0x1FF85000, (USHORT)BufferLen, TxDataBuf);//SLC
+		ECC = 2 + BIT5 + BIT7; //60 bit + SLC +  Encryption on
+		for(index=0; index<100; index++) // Search 100 Blocks for CIS Block
+		{
+			Address = index * mBlockPage;
+			TempStatus = ReadSpareData(0xA0, 0, Address, 6, SpareBuf);
+			if((TempStatus) && (SpareBuf[0] == 0x43) && (SpareBuf[1] == 0x53))
+			{
+				for(RetryCnt=0; RetryCnt<3; RetryCnt++)
+				{
+					Status=readBlockData(	(BYTE)(EachTxSize/512),
+											ECC,
+											Spare,
+											Address,
+											EachTxSize,
+											(BYTE *)&eCISSetData);
+					if(Status)
+						break;
+				}
+
+				if(!Status)
+					continue;
+				if(eCISSetData.PAGE_MODE == 1)
+				{
 					CISADDR[CISIdx] = Address;
 					CISIdx++;
 					moldversionCISflag = Success_State; // At Least Find 1 CIS Block
+					mCisBlkPgeMode = 1; //SLC mode
 				}
 
-				if (CISIdx >= (PlaneNum*2)){
+			}
+
+			if (CISIdx >= (PlaneNum * 2))
+			{
+				break;
+			}
+		}
+
+		if(CISIdx == 0)
+		{
+			memset(TxDataBuf, 1, BufferLen);
+			writeData(0x1FF85000, (USHORT)BufferLen, TxDataBuf);//MLC
+			ECC = 2 + BIT7; //60 bit + MLC +  Encryption on
+			for(index=0; index<100; index++) // Search 100 Blocks for CIS Block
+			{
+				Address = index * pmFlashStructure->BlockPage;
+				TempStatus = ReadSpareData(0x80, 0, Address, 6, SpareBuf);
+				if((TempStatus) && (SpareBuf[0] == 0x43) && (SpareBuf[1] == 0x53))
+				{
+					for(RetryCnt=0; RetryCnt<3; RetryCnt++)
+					{
+						Status=readBlockData(	(BYTE)(EachTxSize/512),
+												ECC,
+												Spare,
+												Address,
+												EachTxSize,
+												(BYTE *)&eCISSetData);
+						if(Status)
+							break;
+					}
+
+					if(!Status)
+						continue;
+					if(eCISSetData.PAGE_MODE == 0)
+					{
+						CISADDR[CISIdx] = Address;
+						CISIdx++;
+						moldversionCISflag = Success_State; // At Least Find 1 CIS Block
+						mCisBlkPgeMode = 0; //MLC mode
+					}
+
+				}
+
+				if (CISIdx >= (PlaneNum * 2))
+				{
 					break;
 				}
 			}
 
-        }
-
+		}
         return moldversionCISflag;
+}
+
+BYTE CFlash::getCisBlkPgeMode(void){
+
+	return mCisBlkPgeMode;
 }
 
 UINT CFlash::UFDSettingRead(BYTE MI_CMD, BYTE CFG0, BYTE adapter_id, BYTE target_id,ULONG Address, USHORT BufLen, BYTE *buffer){
@@ -1398,7 +1514,7 @@ UINT CFlash::INITISP(ULONG AddrOffset, USHORT BufLen, BYTE *buffer) {
 	// TODO Auto-generated constructor stub
 	cout << "CeMMCDriver::INITISP" << endl;
 	BOOL	Status=true;
-
+	BYTE buffertmp[512];
 	// Sherlock_20111110, Add A Special Flag for SendTURdy in Scan_Only Mode.
 	BYTE	WaitCnt = 0, ScsiStatus, SendTURdy = 0;
 	if(AddrOffset & 0x0001)
@@ -1406,7 +1522,7 @@ UINT CFlash::INITISP(ULONG AddrOffset, USHORT BufLen, BYTE *buffer) {
 		SendTURdy = 1;
 		AddrOffset = AddrOffset&(~0x0001);
 	}
-
+    memcpy(buffertmp,buffer,512);
 	Status=pmDriver->UFDSettingWrite(MI_INIT_ISP, 0, 0, 0, AddrOffset, BufLen, buffer);
 
 // Sherlock_20111110, Add A Special Flag for SendTURdy in Scan_Only Mode.
@@ -1430,3 +1546,35 @@ UINT CFlash::INITISP(ULONG AddrOffset, USHORT BufLen, BYTE *buffer) {
 
 	return Status;
 }
+
+UINT CFlash::BlockMarkWrite(BYTE MI_CMD, BYTE adapter_id, BYTE target_id, ULONG Address, USHORT BufLen, BYTE LEN0, BYTE CFG0, BYTE CFG1, BYTE *buffer){
+	// TODO Auto-generated constructor stub
+	return pmDriver->BlockMarkWrite(MI_CMD,adapter_id,target_id,Address,BufLen,LEN0,CFG0,CFG1,buffer);
+}
+UINT CFlash::CopySLCtoTLC(BYTE MI_CMD, BYTE CE, BYTE CH, WORD BlockAddr, BYTE Mode, WORD LunOffset){
+	// TODO Auto-generated constructor stub
+	return pmDriver->CopySLCtoTLC(MI_CMD, CE, CH, BlockAddr, Mode, LunOffset);
+}
+UINT CFlash::MLCVBWrite(BYTE MI_CMD, WORD BlockAddr, WORD LunOffset){
+	// TODO Auto-generated constructor stub
+	return pmDriver->MLCVBWrite(MI_CMD, BlockAddr,LunOffset);
+}
+UINT CFlash::FillMainFIFO(BYTE MI_CMD, ULONG BufLen, BYTE *buffer){
+	// TODO Auto-generated constructor stub
+	return pmDriver->FillMainFIFO(MI_CMD, BufLen,buffer);
+}
+
+UINT CFlash::BlockCheckECC(BYTE MI_CMD, BYTE CE, BYTE CH, WORD BlockAddr, BYTE Mode, USHORT BufLen, BYTE *buffer){
+	// TODO Auto-generated constructor stub
+	return pmDriver->BlockCheckECC(MI_CMD, CE, CH, BlockAddr, Mode, BufLen, buffer);
+}
+
+UINT CFlash::SetThreeSLCVB(BYTE MI_CMD){
+	// TODO Auto-generated constructor stub
+	return pmDriver->SetThreeSLCVB(MI_CMD);
+}
+UINT CFlash::SpareAccessRead(BYTE MI_CMD, BYTE COLA1, BYTE COLA0, BYTE adapter_id, BYTE target_id, USHORT BlockPage, ULONG Address, USHORT BufLen, BYTE *buffer){
+
+	return pmDriver->SpareAccessRead(MI_CMD,COLA1,COLA0,adapter_id,target_id,BlockPage,Address,BufLen,buffer);
+}
+

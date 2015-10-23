@@ -1,7 +1,7 @@
 /*
  * CPackedCommand.h
  *
- *  Created on: 2015¦~6¤ë29¤é
+ *  Created on: 2015ï¿½~6ï¿½ï¿½29ï¿½ï¿½
  *      Author: Coolio
  */
 
@@ -45,13 +45,13 @@ class CPackedCommand {
 public:
 	CPackedCommand();
 	virtual ~CPackedCommand();
-	BOOL SendPackageCmd(LPVOID lpInBuffer,DWORD nInBufferSize,
+	UINT SendPackageCmd(LPVOID lpInBuffer,DWORD nInBufferSize,
 						ULONG LBA, ULONG BufLen, BYTE *buffer,
 						UINT PackMode,
 						UINT AccessType,
 						UINT UnPackMode);
 private:
-	BOOL SendReadWriteCMD(ULONG LBA, ULONG BufLen, BYTE *buffer,UINT AccessType,BYTE Lun,BYTE adapter_id, BYTE target_id);
+	UINT SendReadWriteCMD(ULONG BufLen, BYTE *buffer,UINT AccessType);
 	void CalCheckSum(IN UCHAR *DataIn,OUT BYTE *DataOut);
 };
 

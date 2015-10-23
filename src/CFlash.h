@@ -29,6 +29,7 @@ private:
 	FlashStructure *pmFlashStructure;
 	UINT initEntryItemNum();
     INT moldversionCISflag;
+    BYTE mCisBlkPgeMode;
 
 
 public:
@@ -45,7 +46,7 @@ public:
 	BYTE getPlaneNum();
 	WORD getBaseFType();
 	BYTE getCHipVersion();
-	void getFlashID(UINT* buf);
+	void getFlashID(BYTE* buf);
 	UINT setFlashSize();
 	BYTE getChipSelectNum();
 	BYTE getChannelNum();
@@ -55,8 +56,8 @@ public:
 	UINT MarkBad(ULONG Address, BYTE PageSEC,USHORT LessPage);
 	UINT INITISP(ULONG AddrOffset, USHORT BufLen, BYTE *buffer);
 	UINT resetEcc();
+	UINT setEcc(BYTE ECC);
 	UINT setMultiPageAccress();
-	UINT getFlashType();
 	UINT writeTPMT();
 	UINT writeCellMapFlashType(ULONG TableAddress,BYTE MLCType);//0:MLC 1:SLC
 	UINT writeEccMapBitLength(ULONG TableAddress,BYTE MaxECCBitLength);
@@ -95,5 +96,15 @@ public:
 	UINT BlockAccessWrite(BYTE MI_CMD, BYTE PageSec, BYTE ECC, SPARETYPE Spare,  BYTE adapter_id, BYTE target_id, ULONG Address, ULONG BufLen, BYTE *buffer);
 	UINT BlockAccessRead(BYTE MI_CMD, BYTE PageSec, BYTE ECC,  BYTE adapter_id, BYTE target_id, USHORT BlockPage, ULONG Address, ULONG BufLen, BYTE *buffer);
 	UINT SetInfoWriteCMD(BYTE adapter_id, BYTE target_id, VendorCMD VCMD, BYTE *buffer);
+	void initFlashInfo();
+
+	UINT BlockMarkWrite(BYTE MI_CMD, BYTE adapter_id, BYTE target_id, ULONG Address, USHORT BufLen, BYTE LEN0, BYTE CFG0, BYTE CFG1, BYTE *buffer);
+	UINT CopySLCtoTLC(BYTE MI_CMD, BYTE CE, BYTE CH, WORD BlockAddr, BYTE Mode, WORD LunOffset);
+	UINT MLCVBWrite(BYTE MI_CMD, WORD BlockAddr, WORD LunOffset);
+	UINT FillMainFIFO(BYTE MI_CMD, ULONG BufLen, BYTE *buffer);
+	UINT BlockCheckECC(BYTE MI_CMD, BYTE CE, BYTE CH, WORD BlockAddr, BYTE Mode, USHORT BufLen, BYTE *buffer);
+	UINT SetThreeSLCVB(BYTE MI_CMD);
+	UINT SpareAccessRead(BYTE MI_CMD, BYTE COLA1, BYTE COLA0, BYTE adapter_id, BYTE target_id, USHORT BlockPage, ULONG Address, USHORT BufLen, BYTE *buffer);
+	BYTE getCisBlkPgeMode(void);
 };
 #endif /* CFLASH_H_ */

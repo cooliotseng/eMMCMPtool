@@ -4,16 +4,16 @@
 
 using namespace std;
 
-#define BOOL bool
+#define BOOL int
 #define BYTE unsigned char
 #define UINT unsigned int
-#define USHORT unsigned int
+#define USHORT unsigned short
 #define ULONG unsigned long
 #define UCHAR unsigned char
 #define INT  int
 #define TCHAR  char
 #define DWORD  unsigned long
-#define WORD   long
+#define WORD   unsigned short
 #define ULONGLONG unsigned long long
 #define MAX_PATH 32767
 #define LPVOID void *
@@ -57,7 +57,7 @@ typedef struct _SaveBadBlockInfo // Sherlock_20120130
 
 typedef struct _Flash_FwScheme
 {
-	UINT   FLH_ID[8];
+	BYTE   FLH_ID[8];
 
 	BYTE   Model0;
 	BYTE   Model1;
@@ -69,11 +69,11 @@ typedef struct _Flash_FwScheme
 	BYTE   Model7;
 
 	USHORT LessBlock;	// Extended Block
-	UINT LessPage;
-	UINT BlockPage;
+	USHORT LessPage;
+	USHORT BlockPage;
 	BYTE   PageSEC;
 	BYTE   SelectPlane;
-	UINT PlaneBlock;
+	USHORT PlaneBlock;
 
 	BYTE   Rsv1[6];	// [0~3]:As SettingCapacity & Return RealCapacity
 					// [4]: Flag of New FW Algorithm, 0:Old, 1:New
@@ -110,8 +110,8 @@ typedef struct _RTblInfo
 
 #define	MAX_ZONE			256
 #define	MAX_CACHE_NO		32
-#define	MAX_MTBL_BLK_NO	32
-#define	QDEPTH_GBLK		5
+#define	MAX_MTBL_BLK_NO		32
+#define	QDEPTH_GBLK			5
 
 typedef struct
 {
@@ -248,7 +248,7 @@ typedef struct _TableCFG
 	BYTE	ErrorBitRate;
 	BYTE	ECCSET;
 	BYTE	Type;			// Original Type
-	UINT	BaseFType;		// FlashType, Same As MPTool Using (New)
+	WORD	BaseFType;		// FlashType, Same As MPTool Using (New)
 	UINT	Mode;			// ToolMode (New)
 	UINT	ED3EraseCount;	// For ED3 Erase Count
 	UINT	RsvInfo;
@@ -270,7 +270,10 @@ typedef struct _eMMC_CIS_INFO
 	BYTE	FLH_INFO;		// 000D
 	BYTE	FW_PAGE;		// 000E
 	BYTE	CIS_PAGE;		// 000F
-	BYTE	Reserved0[16];	// 0010-001F
+	BYTE	PAGE_MODE;		// 000F
+	BYTE	PreMP_MODE;		// 000F
+	BYTE	Sorting_MODE;		// 000F
+	BYTE	Reserved0[13];	// 0010-001F
 	BYTE	PRE_LOAD_DATA;	// 0x20
 	BYTE	CIS_Version;		// 0x21
 	BYTE	EACH_PAGE;			// 0022
@@ -284,8 +287,9 @@ typedef struct _eMMC_CIS_INFO
 	BYTE	Reserved8[16];	// 0080-008F
 	BYTE	Reserved9[16];	// 0090-009F
 	BYTE	Reserved10[16];	// 00A0-00AF
-	BYTE	Reserved11[16];	// 00B0-00BF
-	BYTE	Reserved12[16];	// 00C0-00CF
+
+	UINT    TotalMlcEraCnt[4];
+	UINT    TotalSlcEraCnt[4];
 	UINT	CIS_RowAddr[4];	// 00D0-00DF
 	USHORT	TurboPage[256];	// 00E0-02DF
 	BYTE	CID[16];			// 02E0 -02EF
@@ -331,6 +335,7 @@ typedef struct _MapChipSelect
 	INT		EntryItemNum; // HIWORD: Extended Block (From LessBlock), LOWORD: Entry
 	UINT	BadBlockCnt[MaxChipSelectNo*MaxChannelNo];
 	UINT	SysBlkAdr[3076];	// Sherlock_20140730 #if(eMMC_CFG_A2CMD == 1), Reserve Last 4 UINT For Future Use
+	UINT	EccErrBlkAdr[512];	//Cody 20150225
 	LPMapChannel CEItem[MaxChipSelectNo];
 }MapChipSelect, *LPMapChipSelect;
 
@@ -384,7 +389,7 @@ typedef struct _CIS_INFO
 	UINT   LunStartLBA[4];
 	UINT   LunCapacity[4];
 	BYTE   LunAttribute[4];
-	UINT   LunType[4];
+	BYTE   LunType[4];
 	UINT   SysStartLBA;
 	UINT   SysCapacity;
 	BYTE   Manufacture[32];
@@ -673,6 +678,9 @@ typedef struct _SCSI_PASS_THROUGH_WITH_BUFFERS {
 #define		FT_2Plane		0x0002
 #define		FT_4Plane		0x0004
 
+
+
+
 #define Samsung_M_2P		(FT_Samsung|			FT_MLC|FT_2Plane)	// = 0x1022
 #define Samsung_M_4P		(FT_Samsung|			FT_MLC|FT_4Plane)	// = 0x1024
 #define Samsung_T_2P		(FT_Samsung|			FT_TLC|FT_2Plane)	// = 0x1032
@@ -792,8 +800,8 @@ const BYTE WriteCMD_TSB_2P[14] = {0x02,0x1B,0x80,0x5,0x11,0x0,0x0,0x0,0x81,0x5,0
 #define ForceFstTBBuild		BIT29
 #define ClearSysBlock		BIT28
 #define ScanBlockOnly		BIT27
-#define DumpDebugMemory	BIT26
-#define PublicLunOnly			BIT25
+#define DumpDebugMemory		BIT26
+#define PublicLunOnly		BIT25
 #define HDDPowrEanble		BIT24
 #define SSCEnable			BIT23
 #define ForceSecTBBuild		BIT22
@@ -897,3 +905,33 @@ const BYTE WriteCMD_TSB_2P[14] = {0x02,0x1B,0x80,0x5,0x11,0x0,0x0,0x0,0x81,0x5,0
 #define SCSI_SEND_DIAG	0x1D		// Send Diagnostic (O)
 #define SCSI_TST_U_RDY	0x00		// Test Unit Ready (MANDATORY)
 #define SCSI_WRITE_BUFF	0x3B		// Write Buffer (O)
+
+#define VDR_SORTING			0xF8
+#define MI_SORT_READECC		0x80
+#define MI_SORT_Set3SLCVB	0x82
+#define MI_SORT_COPYTLC		0x84
+#define MI_SORT_FillFIFO	0x86
+#define MI_SORT_COPYMLC		0x88
+
+// Use in TestProcedureMask
+#define	Proc_BuildSysTbl	0x01	// Bit_0
+#define	Proc_CleanMPInfo	0x02	// Bit_1
+#define	Proc_DisableCISDL	0x04	// Bit_2
+#define	Proc_DisableReset	0x08	// Bit_3, Original_Format
+#define	Proc_StressTest		0x10	// Bit_4
+
+#define	Proc_HubTestOnly	0x100	// Bit_8
+#define	Proc_DLVDROnly		0x200	// Bit_9
+#define	Proc_ReStartFWOnly	0x400	// Bit_10
+#define	Proc_SLCPageMode	0x800 // Bit_11
+
+
+//Use in LunTypeBitMap
+
+#define SortingFW			BIT19 //0:disable  1:enable sorting FW
+#define PreMPFWWait1Sec	BIT18
+#define PreMPFW			BIT17
+#define NormalFW			BIT16
+
+#define ECC60BIT 	2
+

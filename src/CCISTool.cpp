@@ -53,8 +53,8 @@ UINT CCISTool::setBlockMaptoBitMap(CFlash *pflash,CRootTable *roottable,LPMapChi
 				for(BlockIndex0=0; BlockIndex0<BlockEnd; BlockIndex0+=2)
 				{
 					BlockIndex1 = BlockIndex0 + 1;
-					BlockSts0 = roottable->getMapEntryItem((BlockIndex0/8), (BYTE)BlockIndex0%8);
-					BlockSts1 = roottable->getMapEntryItem((BlockIndex1/8), (BYTE)BlockIndex1%8);
+					BlockSts0 = roottable->getMapEntryItem(CE,CH,(BlockIndex0/8), (BYTE)BlockIndex0%8);
+					BlockSts1 = roottable->getMapEntryItem(CE,CH,(BlockIndex1/8), (BYTE)BlockIndex1%8);
 
 					if((BlockSts0 == 0) && (BlockSts1 == 1)) 		// Even is Good Block But Odd is Bad Block
 						roottable->setMapEntryItem(CE,CH,(BlockIndex0/8), (BYTE)(BlockIndex0%8), 1);
@@ -76,7 +76,7 @@ UINT CCISTool::setBlockMaptoBitMap(CFlash *pflash,CRootTable *roottable,LPMapChi
 
 			for(BlockIndex=0; BlockIndex<BlockEnd; BlockIndex++)
 			{
-				BlockSts = roottable->getMapEntryItem((BlockIndex/8), (BYTE)(BlockIndex%8));
+				BlockSts = roottable->getMapEntryItem(CE,CH,(BlockIndex/8), (BYTE)(BlockIndex%8));
 				if(BlockSts == 0) // Good Block
 				{
 					Value = 0x03<<(2*(BlockIndex%4)); // Shift 2 Bits
@@ -102,11 +102,8 @@ UINT CCISTool::setBlockMaptoBitMap(CFlash *pflash,CRootTable *roottable,LPMapChi
 
 	for(CE=0; CE<pflash->getChipSelectNum(); CE++)
 	{
-		if((RootTable[CE].dwRTBLVersion & 0xFFFF0000) == 0x52540000) // RT_TAG Protection
-		{
 			memcpy(&pCISInfo->Cell_Map[512*CE], &RootTable[CE].chBlkTagBitMapTbl[0], 262);	 	// Copy into eCIS.CellMap[]
 			memcpy(&pCISInfo->ECC_Map[512*CE], &RootTable[CE].chBlkECCBitMapTbl[0], 262);	// Copy into eCIS.ECCMap[]
-		}
 	}
 	// ---------- Only Output Message of Cell ECC Map ----------
 

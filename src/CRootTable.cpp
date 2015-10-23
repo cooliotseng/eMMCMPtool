@@ -13,7 +13,7 @@
 CRootTable::CRootTable() {
 	mRTInfoINITFlag = Fail_State;
 	pmRTInfo = new RTblInfo;
-	pmRootTable =new ROOT_VARS();
+	pmRootTable =new ROOT_VARS[4];
 	pmflash = NULL;
 	pmUFDBlockMap = new MapChipSelect();
 
@@ -25,7 +25,7 @@ CRootTable::CRootTable(CFlash *flash) {
 
 	pmUFDBlockMap = AllocateBlockMapMemory();
 	pmRTInfo = new RTblInfo();
-	pmRootTable =new ROOT_VARS();
+	pmRootTable =new ROOT_VARS[4];
 
 	memset(pmRTInfo, 0xFF, sizeof(RTblInfo));
 	pmRTInfo->Exist = (BYTE)false;
@@ -37,8 +37,8 @@ CRootTable::CRootTable(CFlash *flash) {
 	if(pmflash->isOldVersionCISExit()){
 		mRTInfoINITFlag = initRTInfoTable();
 		if(mRTInfoINITFlag == Success_State){
-			setCellMap(pmRTInfo->RAWAddr0,pmflash,pmRTInfo->CellType);
-			setEccMap(pmRTInfo->RAWAddr0,pmflash,pmRTInfo->CellType);
+			setCellMap(pmRTInfo->RAWAddr0,pmRTInfo->CellType);
+			setEccMap(pmRTInfo->RAWAddr0,pmRTInfo->CellType);
 			initRootTable();
 		}
 	}
@@ -54,7 +54,7 @@ void CRootTable::setFlash(CFlash *flash) {
 	pmflash=flash;
 }
 
-UINT CRootTable::setCellMap(ULONG Address, CFlash *pmflash, BYTE MLC) {
+UINT CRootTable::setCellMap(ULONG Address,BYTE MLC) {
 	// TODO Auto-generated constructor stub
 		UINT	PU_Idx, Byte_Idx, bit_Idx;
 		BYTE	ValueTmp;
@@ -75,7 +75,7 @@ UINT CRootTable::setCellMap(ULONG Address, CFlash *pmflash, BYTE MLC) {
 		return Success_State;
 }
 
-UINT CRootTable::setEccMap(ULONG Address, CFlash *pmflash, BYTE MaxECC) {
+UINT CRootTable::setEccMap(ULONG Address, BYTE MaxECC) {
 	// TODO Auto-generated constructor stub
 		UINT	PU_Idx, Byte_Idx, bit_Idx;
 		BYTE	ValueTmp;
@@ -106,12 +106,28 @@ UINT CRootTable::setSystemBlock(CFlash *pflash) {
 		{
 			if(pmUFDBlockMap->SysBlkAdr[Idx] == 0)
 				break;
-			Status = setCellMap(pmUFDBlockMap->SysBlkAdr[Idx],pflash,1);
-			Status = setEccMap(pmUFDBlockMap->SysBlkAdr[Idx], pflash,0);
+			Status = setCellMap(pmUFDBlockMap->SysBlkAdr[Idx],1);
+			Status = setEccMap(pmUFDBlockMap->SysBlkAdr[Idx], 0);
 		}
 
 		return Status;
 }
+
+UINT CRootTable::setEccErrBlock(CFlash *pflash) {
+	// TODO Auto-generated constructor stub
+	UINT	Status = Success_State, Idx;
+
+		for(Idx=0; Idx<512; Idx++)
+		{
+			if(pmUFDBlockMap->EccErrBlkAdr[Idx] == 0)
+				break;
+			Status = setCellMap(pmUFDBlockMap->EccErrBlkAdr[Idx],1);
+			Status = setEccMap(pmUFDBlockMap->EccErrBlkAdr[Idx], 0);
+		}
+
+		return Status;
+}
+
 
 ROOT_VARS * CRootTable::getRootTable() {
 	// TODO Auto-generated constructor stub
@@ -146,7 +162,7 @@ UINT CRootTable::initRTInfoTable() {
 	UINT	Status = Fail_State;
 	USHORT	BlockAddr, PageAddr;
 	BYTE	buffer[7]={0xFF};
-	UINT   FLH_ID[8];
+	BYTE   FLH_ID[8];
 	VendorCMD	VCMD;
 	BYTE tPlaneNum;
 	UINT tBlockPage;
@@ -260,7 +276,7 @@ UINT CRootTable::updateEraseCount() {
 		UINT	Status = Fail_State;
 		BYTE	ECC;// = bit_7 + bit_0; // Encryption_On(Bit7) + ECC_On(Bit6) + 40bit_ECC(Bit1 & Bit0)
 		BYTE	TxDataBuf[1024];
-		UINT   FLH_ID[8];
+		BYTE   FLH_ID[8];
 		UINT	PU_Idx, chMaxCachBufNo = 0, Cache_Idx, TempAddr, OriginNRT, FB_Idx, QDep_Idx, FB_PU, FB_Pair;
 		USHORT	BlockPage = pmflash->getBlockPage();
 		BYTE tPlaneNum=pmflash->getPlaneNum();
@@ -491,29 +507,29 @@ UINT CRootTable::writeEccMap() {
 
 UINT CRootTable::ScanBlock(SettingConfgInfo *pmCurSettingConfgInfo) {
 	// TODO Auto-generated constructor stub
-	BOOL	Status = true, Status1 = true;
+	BOOL	Status1 = true,EccErrSts = true;
 	int 		ChipIndex, ErrorCnt=0, ScanChipNo;
 	UINT  	EntryIndex, EntryItemNo, Address=0, Count=0, ChipAddress, bufIndex, BlkAddr, ExtendedBlock, PlaneBlock;
 	BYTE 	ChipSelectNo, ChannelNo, Chk1, Chk2, Register2, Register3, DumpRec=0, ForcedBad=0, EncryptionFlash; //Register1, EncryptionSet
 	BYTE	EncryptionCMD_Scan=0, EncryptionCMD_EraseCnt=0, ECCSet=0; // Sherlock_20131025, 0x80=Encryption_ON, 0x00=Encryption_OFF
 	BYTE 	buffer1[MaxChekBlockNo], buffer2[MaxChekBlockNo], buffer3[MaxChekBlockNo], buffer4[MaxChekBlockNo], buffertmp;
 	ULONG	Reg_FlashAccess = 0x1FF82600; //Reg_Encryption = 0x1FF82809
-
-	BYTE	InternalChip = 1;
+	ULONG	Index,TxLen;
+	BYTE	InternalChip = 1,EccErrEccSet = 0;
 	UINT	BasicBlock;
 	UINT	Lun1End, Lun2Start, Lun2End, Lun3Start; // 2 Internal Chip Use, Lun1Start = 0
 	UINT	Lun3End, Lun4Start, Lun4End, Lun5Start; // 4 Internal Chip Use
-	UINT	EraseCount=0, SysBlkCnt=0;
+	UINT	SysBlkCnt=0,EccErrBlkCnt = 0;
+	USHORT	EraseCount=0;
 	UINT 	m_BlockPage;
 	UINT	m_PageSize;
+	UINT	LastPage,Status = 1;
+	BYTE	BitErrorCnt = 0,ValueTmp = 0,PageSec ;
+    BYTE 	*pTxBuf;
+	BYTE 	*pRxBuf;
+	UINT	ErrorBitRate = 24;//coolio temporary setting 20150909
 
-
-	if(pmCurSettingConfgInfo->AddExtendedBlock){
-		UINT ShiftExtendedBlock = (UINT)pmCurSettingConfgInfo->CisDataEx.FLH_FwScheme.LessBlock << 16;
-		pmUFDBlockMap->EntryItemNum =  pmUFDBlockMap->EntryItemNum + ShiftExtendedBlock;
-	}
-
-	BYTE	Config = 0;
+	BYTE	Config = 0x23;
 	Config = Config | (Scan_ClearSysBlk | Scan_EraseEncrypt);
 	//if(pThreadInfo->instp->m_CurMPToolMode & SaveBBInfoToFlash)
 	//	Config |= Scan_SaveBadBlkInfo; //bit_5; // Save Bad Block Info To Flash
@@ -532,18 +548,24 @@ UINT CRootTable::ScanBlock(SettingConfgInfo *pmCurSettingConfgInfo) {
 
 
 
-	ExtendedBlock = ((UINT)pmUFDBlockMap->EntryItemNum >> 16) & 0x0000FFFF;	// Extract Extended Block Info. From UI
-	pmUFDBlockMap->EntryItemNum = pmUFDBlockMap->EntryItemNum & 0x0000FFFF;	// Return Original Value
+	ExtendedBlock = (UINT)pmCurSettingConfgInfo->CisDataEx.FLH_FwScheme.LessBlock;	// Extract Extended Block Info. From UI
 
 	ChipSelectNo	= pmUFDBlockMap->ChipSelectNum;
 	ChannelNo	= pmUFDBlockMap->ChannelNum;
 	EntryItemNo	= pmUFDBlockMap->EntryItemNum;
 	m_BlockPage	= pmflash->getBlockPage();
 	m_PageSize	= pmflash->getPageSize();
+	PageSec = m_PageSize/512;
+	LastPage = m_BlockPage;
+	TxLen = m_PageSize;
+	pTxBuf = new BYTE[TxLen];
+	pRxBuf = new BYTE[TxLen];
 
 	// ----- Sherlock_20121112, Only Scan 1 Chip -----
-	if(Config & Scan_ScanOneChip)	ScanChipNo = 1;
-	else							ScanChipNo = ChipSelectNo*ChannelNo;
+	if(Config & Scan_ScanOneChip)
+		ScanChipNo = 1;
+	else
+		ScanChipNo = ChipSelectNo*ChannelNo;
 
 	//  ----- Sherlock_20110928, Get Chip ID, Start -----
 	BYTE	Code200A = 0x36, Code200B = 0x38;
@@ -580,9 +602,12 @@ UINT CRootTable::ScanBlock(SettingConfgInfo *pmCurSettingConfgInfo) {
 
 
 	// ----- Get Flash Type For Erase Encryption Good Block -----
-	if((BaseFType & FT_Vendor) == FT_Toshiba)		EncryptionFlash = 1;
-	else if((BaseFType & FT_Vendor) == FT_Samsung)	EncryptionFlash = 1;
-	else											EncryptionFlash = 0;
+	if((BaseFType & FT_Vendor) == FT_Toshiba)
+		EncryptionFlash = 1;
+	else if((BaseFType & FT_Vendor) == FT_Samsung)
+		EncryptionFlash = 1;
+	else
+		EncryptionFlash = 0;
 
 	// ----- ECC Setting For Block Write -----
 	if((BaseFType & (FT_Cell_Level)) == (FT_TLC))
@@ -676,8 +701,8 @@ SetPageNumber: // ---------- Set Page Number ----------
 	}
 
 
-	if(Config & Scan_DumpMessage)
-		DumpRec = 1; // Sherlock_20110614, Dump BadBlockRec.txt Enable
+	//if(Config & Scan_DumpMessage)
+	//	DumpRec = 1; // Sherlock_20110614, Dump BadBlockRec.txt Enable
 
 	FILE * BadBlockRec;
 
@@ -715,6 +740,7 @@ SetPageNumber: // ---------- Set Page Number ----------
 			}
 
 			EncryptionCMD_Scan &= (~BIT7); // Sherlock_20131025, Clear Encryption_CMD
+			EncryptionCMD_Scan = EncryptionCMD_Scan+1;
 
 			ErrorCnt = 0;
 	ReSendCmdAgain00_Off: // ---------- Scan_1, Page 0 With Encryption OFF ----------
@@ -737,7 +763,7 @@ SetPageNumber: // ---------- Set Page Number ----------
 			}
 
 			EncryptionCMD_Scan |= BIT7; // Sherlock_20131025, Set Encryption_CMD
-
+			EncryptionCMD_Scan = EncryptionCMD_Scan +1;
 //Only_Scan_Mode: // Scan Without Change Encryption Mode
 
 			ErrorCnt = 0;
@@ -766,14 +792,24 @@ JudgeBlock:
 			{
 
 				// Judge Encryption OFF Part
-				if( (buffer1[bufIndex]==0x01) || (buffer2[bufIndex]==0x01) )		Chk1 = 1; // Bad
-				else if(buffer1[bufIndex]==0x02)								Chk1 = 2; // System
-				else															Chk1 = 0; // Good
+				if( (buffer1[bufIndex]==0x01) || (buffer2[bufIndex]==0x01) )
+					Chk1 = 1; // Bad
+				else if(buffer1[bufIndex]==0x02)
+					Chk1 = 2; // System
+				else if(buffer1[bufIndex]==0x03)
+					Chk1 = 3; //Cody_20150224 ECC unrecoverable error
+				else
+					Chk1 = 0; // Good
 
 				// Judge Encryption ON Part
-				if( (buffer3[bufIndex]==0x01) || (buffer4[bufIndex]==0x01) )		Chk2 = 1; // Bad
-				else if(buffer3[bufIndex]==0x02)								Chk2 = 2; // System
-				else															Chk2 = 0; // Good
+				if( (buffer3[bufIndex]==0x01) || (buffer4[bufIndex]==0x01) )
+					Chk2 = 1; // Bad
+				else if(buffer3[bufIndex]==0x02)
+					Chk2 = 2; // System
+				else if(buffer3[bufIndex]==0x03)
+					Chk2 = 3; //Cody_20150224 ECC unrecoverable error
+				else
+					Chk2 = 0; // Good
 
 				ForcedBad = 0; // Initialize This Forced BadBlock Flag
 				BlkAddr = 512*Count + bufIndex;
@@ -819,7 +855,7 @@ JudgeBlock:
 						ErrorCnt=0;
 ReSendEraseSysBlock:
 
-						UINT	TempEraseCount = 0;
+						USHORT	TempEraseCount = 0;
 						SPARETYPE Spare;
 						Spare.SPARE0=0x4D; //'M'
 						Spare.SPARE1=0x50; //'P'
@@ -830,6 +866,8 @@ ReSendEraseSysBlock:
 						Status = pmflash->getEraseCount(Address+(bufIndex*m_BlockPage),EncryptionCMD_EraseCnt>>7,2,&TempEraseCount);	// Sherlock_20140421, Always EncriptionCMD for FW System Block
 						Spare.SPARE3=(BYTE)((TempEraseCount + 1)>>8);	// HI
 						Spare.SPARE2=(BYTE)(TempEraseCount + 1);		// LO
+
+						Status = UpdatePairMapByAddress(Address+(bufIndex*m_BlockPage), 1, 0);
 
 						Status=pmflash->BlockOtherRead(MI_BLOCK_ERASE, 0, 0, Address+(bufIndex*m_BlockPage), 1, &buffertmp);
 						// ----- Sherlock_20140114, If DataLen < PageSector, Use DataLen/512 into cdb[7] -----
@@ -867,6 +905,8 @@ ReSendEraseSysBlock:
 					if(Config & Scan_EraseGoodBlk)	// BIT_2: Erase Good Block
 					{
 						ErrorCnt=0;
+
+						Status = UpdatePairMapByAddress(Address+(bufIndex*m_BlockPage), 1, 0);
 ReSendEraseGoodBlock:
 						Status=pmflash->BlockOtherRead(MI_BLOCK_ERASE, 0, 0, Address+(bufIndex*m_BlockPage), 1, &buffertmp);
 						if(!Status)
@@ -913,9 +953,142 @@ ReSendEraseEncryptionGoodBlock:
 						}
 					}
 
-				}
-				else // Bad Block
-				{
+				}else if((Chk1 == 3) &&(Chk2 == 3)){//Cody_20150224 ECC unrecoverable error
+					ErrorCnt = 0;
+					EccErrSts = true;
+					if((IDBuffer[0] == 0xAD))// && (ChipVer == 0xD0))
+						EccErrEccSet = 0; //EccErrEccSet -> Encryption off, ECC 56bits
+					else
+						EccErrEccSet = 1; //EccErrEccSet -> Encryption off, ECC 40 bits
+
+					UINT	EccErrEraseCount = 0;
+
+					SPARETYPE EccErrSpare;
+					EccErrSpare.SPARE0=0x4D; //'M'
+					EccErrSpare.SPARE1=0x50; //'P'
+					EccErrSpare.SPARE2=0x00;
+					EccErrSpare.SPARE3=0x00;
+					EccErrSpare.SPARE4=0x99;
+					EccErrSpare.SPARE5=0x99;
+
+					EccErrSpare.SPARE3=(BYTE)((EccErrEraseCount + 1)>>8);	// HI
+					EccErrSpare.SPARE2=(BYTE)(EccErrEraseCount + 1);		// LO
+
+					Status = UpdatePairMapByAddress(Address+(bufIndex*m_BlockPage), 1, 0);
+
+Retry_BST_Erase:
+					Status=pmflash->BlockOtherRead(MI_BLOCK_ERASE, 0, 0, Address+(bufIndex*m_BlockPage), 1, &buffertmp);
+					if(!Status)
+					{
+						usleep(20000);	// Sherlock_20121130, Test
+						ErrorCnt++;
+						if(ErrorCnt <10)		goto Retry_BST_Erase;
+						else						goto EndScanFlashBlock;
+					}
+
+					ErrorCnt = 0;
+Retry_BST_Write:
+					Status=pmflash->BlockAccessWrite(MI_BLOCK_WRITE, PageSec, EccErrEccSet, EccErrSpare, 0, 0, Address+(bufIndex*m_BlockPage), TxLen, pTxBuf);
+					if(!Status)
+					{
+						usleep(20000);	// Sherlock_20121130, Test
+						ErrorCnt++;
+						if(ErrorCnt < 10)		goto Retry_BST_Write;
+						else						goto EndScanFlashBlock;
+					}
+
+					ErrorCnt = 0;
+Retry_BST_Read:
+					Status=pmflash->BlockAccessRead(MI_BLOCK_READ,PageSec, EccErrEccSet, 0, 0, m_BlockPage, Address+(bufIndex*m_BlockPage), TxLen, pRxBuf);
+					if(!Status)
+					{
+						usleep(20000);	// Sherlock_20121130, Test
+						ErrorCnt++;
+						if(ErrorCnt < 10)
+							goto Retry_BST_Read;
+						else
+							goto EndScanFlashBlock;
+					}
+
+					for(Index=0;Index< TxLen; Index++)
+					{
+						if((Index%1024)==0)
+						BitErrorCnt=0;
+
+						ValueTmp=pTxBuf[Index]^pRxBuf[Index];
+
+						if(ValueTmp)
+						{
+							//DebugStr.Format(_T("1(%d)=%x,%d"), DiskPathIndex, ValueTmp, BitErrorCnt);	OutputDebugString(DebugStr);
+							BitErrorCnt+=BitCount(ValueTmp);
+							//DebugStr.Format(_T("2(%d)=%d"), DiskPathIndex, BitErrorCnt);					OutputDebugString(DebugStr);
+						}
+
+						if(BitErrorCnt > ErrorBitRate)
+						{
+							Status=pmflash->BlockOtherRead(MI_BLOCK_ERASE, 0, 0, Address+(bufIndex*m_BlockPage), 1, &buffertmp); // Sherlock_20121005, Add Erase Before MarkBad
+							//MemoryDumpToFile(pTxBuf+Offset, MaxTransfer, pRxBuf, MaxTransfer, DbgStr);
+
+							Status=pmflash->MarkBad(Address+(bufIndex*m_BlockPage),PageSec,LastPage); //mark bad
+							setMapEntryItem((ChipIndex/ChannelNo), (ChipIndex%ChannelNo), (EntryIndex+(bufIndex/8)), (bufIndex%8), 1);
+							EccErrSts = false;
+							break;
+						}
+					}
+
+
+					if(EccErrSts)
+					{
+						if((IDBuffer[0] == 0xAD))// && (ChipVer == 0xD0))
+							EccErrEccSet = BIT7+0; //EccErrEccSet -> Encryption on, ECC 56bits
+						else
+							EccErrEccSet = BIT7+1; //EccErrEccSet -> Encryption on, ECC 40 bits
+
+						EccErrSpare.SPARE3=(BYTE)((EccErrEraseCount + 2)>>8);	// HI
+						EccErrSpare.SPARE2=(BYTE)(EccErrEraseCount + 2);		// LO
+
+						ErrorCnt =0;
+ReSendEraseEccErrBlock:
+
+						Status=pmflash->BlockOtherRead( MI_BLOCK_ERASE, 0, 0, Address+(bufIndex*m_BlockPage), 1, &buffertmp);
+
+						if(!Status)
+						{
+							ErrorCnt++;
+							if(ErrorCnt<10)	goto ReSendEraseEccErrBlock;
+							else				goto EndScanFlashBlock;
+						}
+
+						ErrorCnt =0;
+						BadBlockInfo.BBIName[0] = 0xFFFFFFFF;	// =Clear
+						BadBlockInfo.BBIName[1] = 0xFFFFFFFF;	// =Clear
+						BadBlockInfo.BBIName[2] = 0xFFFFFFFF;	// =Clear
+ReSendWriteEccErrBlock:
+
+						Status=pmflash->BlockAccessWrite(MI_BLOCK_WRITE, (sizeof(SaveBadBlockInfo)/512), EccErrEccSet, EccErrSpare, 0, 0, Address+(bufIndex*m_BlockPage), sizeof(SaveBadBlockInfo), (BYTE *)&BadBlockInfo);
+
+						if(!Status)
+						{
+							ErrorCnt++;
+							if(ErrorCnt<10)	goto ReSendWriteEccErrBlock;
+							else				goto EndScanFlashBlock;
+						}
+
+						BadBlockInfo.BBIName[0] = 0x42616442;	// = 'BadB'
+						BadBlockInfo.BBIName[1] = 0x6C6F636B;	// = 'lock'
+						BadBlockInfo.BBIName[2] = 0x436E743D;	// = 'Cnt='
+
+						if( EccErrBlkCnt < 512) // Protection
+						{
+							pmUFDBlockMap->EccErrBlkAdr[EccErrBlkCnt] = Address+(bufIndex*m_BlockPage);
+							 EccErrBlkCnt++;
+						}
+
+						setMapEntryItem((ChipIndex/ChannelNo), (ChipIndex%ChannelNo), (EntryIndex+(bufIndex/8)), (bufIndex%8), 0);
+					}
+
+				}else {// Bad Block
+
 					setMapEntryItem((ChipIndex/ChannelNo), (ChipIndex%ChannelNo), (EntryIndex+(bufIndex/8)), (bufIndex%8), 1);
 
 					if(ForcedBad == 0) // Count, If It's Not Forced_Bad_Block (Real Exist Block)
@@ -965,20 +1138,14 @@ EndScanFlashBlock:	//Sherlock_20110504, Add Exit
 		if(Status) // Only Write if Scan Success
 			Status1 = pmflash->WriteBadBlockInfoToFlash(&BadBlockInfo, SaveBBInfoAddr, PageIdx, ECCSet, EraseCount);
 	}
-//////////////////////////
-	/*
-	Status = pmflash->ScanBlock(pmUFDBlockMap,Config);
-
-	setUFDBlockMap(pmUFDBlockMap);
-*/
 	return Status;
 }
 
 
-BYTE CRootTable::getMapEntryItem(INT EntryItemIndex, BYTE BlockItemIndex) {
+BYTE CRootTable::getMapEntryItem(BYTE CEIndex, BYTE ChannelIndex,INT EntryItemIndex, BYTE BlockItemIndex) {
 	// TODO Auto-generated constructor stub
-	BYTE CEIndex = pmflash->getChipSelectNum();
-	BYTE ChannelIndex = pmflash->getChannelNum();
+	//BYTE CEIndex = pmflash->getChipSelectNum();
+	//BYTE ChannelIndex = pmflash->getChannelNum();
 	switch(BlockItemIndex)
 		{
 		case 0:
@@ -1000,6 +1167,12 @@ BYTE CRootTable::getMapEntryItem(INT EntryItemIndex, BYTE BlockItemIndex) {
 		}
 		return 0xFF;
 }
+
+BYTE CRootTable::GetUFDBlockMapByByte(BYTE CEIndex, BYTE ChannelIndex, INT EntryItemIndex)
+{
+	return ((LPMapEntryItem)pmUFDBlockMap->CEItem[CEIndex]->ChannelItem[ChannelIndex])[EntryItemIndex].MapToByte;
+}
+
 
 void CRootTable::setMapEntryItem(BYTE CEIndex, BYTE ChannelIndex,INT EntryItemIndex, BYTE BlockItemIndex, BYTE Value) {
 	// TODO Auto-generated constructor stub
@@ -1036,7 +1209,7 @@ void CRootTable::setMapEntryItem(BYTE CEIndex, BYTE ChannelIndex,INT EntryItemIn
 UINT CRootTable:: EraseAllBlock(){
 
 	UINT Status= Success_State;
-	UINT BaseFID[8];
+	BYTE BaseFID[8];
 	BYTE CE, CH, ChipIndex;
 	UINT Entry, Address, ChipAddress=0, BlockIndex, PseudoBlockStart;
 	BYTE  EraseStatus, PageSEC, RetryCnt = 0;
@@ -1156,4 +1329,43 @@ MapChipSelect * CRootTable::AllocateBlockMapMemory(){
 
 	return pUFDItem;
 
+}
+
+
+UINT CRootTable::UpdatePairMapByAddress(ULONG Address,BYTE MLC, BYTE MaxECC)
+{
+	UINT 	PU_Idx, Byte_Idx, bit_Idx;
+	BYTE	CellMap, ECCMap, ValueTmp;
+	BOOL 	Status = false;
+	USHORT BlockPage = pmflash->getBlockPage();
+	BYTE PlaneNum = pmflash->getPlaneNum();
+	PU_Idx = (Address & 0xF0000000) >> 28;					// eMMC Only 1 CH
+	Address = (Address & 0x00FFFFFF)/BlockPage/PlaneNum;	// RAWAdr_BlockAdr_PairAdr
+	Byte_Idx = Address / 8;
+	bit_Idx	= Address % 8;
+	ValueTmp = 0x01<<bit_Idx;
+
+	if(Byte_Idx>512)
+		return false;
+
+
+	Status = pmflash->AccessMemoryRead(MI_READ_DATA, 0, 0, 0x1FF85000+PU_Idx*512+Byte_Idx, 1, &CellMap);
+
+	if(MLC)
+		CellMap |= ValueTmp;
+	else
+		CellMap &= (~ValueTmp);
+
+	Status = pmflash->AccessMemoryWrite(MI_WRITE_DATA, 0, 0, 0x1FF85000+PU_Idx*512+Byte_Idx, 1, &CellMap);
+
+	Status = pmflash->AccessMemoryRead(MI_READ_DATA, 0, 0, 0x1FF85800+PU_Idx*512+Byte_Idx, 1, &ECCMap);
+
+	if(MaxECC)
+		ECCMap |= ValueTmp;
+	else
+		ECCMap &= (~ValueTmp);
+
+	Status = pmflash->AccessMemoryWrite(MI_WRITE_DATA, 0, 0, 0x1FF85800+PU_Idx*512+Byte_Idx, 1, &ECCMap);
+
+	return Status;
 }

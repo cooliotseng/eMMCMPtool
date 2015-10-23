@@ -39,6 +39,13 @@ public:
 	UINT SetInfoWriteCMD(BYTE adapter_id, BYTE target_id, VendorCMD VCMD, BYTE *buffer);
 	UINT UFDSettingWrite(BYTE MI_CMD, BYTE CFG0, BYTE adapter_id, BYTE target_id,ULONG Address, USHORT BufLen, BYTE *buffer);
 	UINT SendTestUnitReady(BYTE Lun, BYTE adapter_id, BYTE target_id, BYTE *pScsiStatus);
+	UINT ReadFlashID(BYTE CE,BYTE *buffer);
+	UINT BlockMarkWrite(BYTE MI_CMD, BYTE adapter_id, BYTE target_id, ULONG Address, USHORT BufLen, BYTE LEN0, BYTE CFG0, BYTE CFG1, BYTE *buffer);
+	UINT CopySLCtoTLC(BYTE MI_CMD, BYTE CE, BYTE CH, WORD BlockAddr, BYTE Mode, WORD LunOffset);
+	UINT MLCVBWrite(BYTE MI_CMD, WORD BlockAddr, WORD LunOffset);
+	UINT FillMainFIFO(BYTE MI_CMD, ULONG BufLen, BYTE *buffer);
+	UINT BlockCheckECC(BYTE MI_CMD, BYTE CE, BYTE CH, WORD BlockAddr, BYTE Mode, USHORT BufLen, BYTE *buffer);
+	UINT SetThreeSLCVB(BYTE MI_CMD);
 };
 
 #endif /* CEMMCDRIVER_H_ */

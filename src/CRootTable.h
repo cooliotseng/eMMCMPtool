@@ -22,9 +22,10 @@ public:
 	CRootTable();
 	CRootTable(CFlash *flash);
 	virtual ~CRootTable();
-	UINT setCellMap(ULONG Address, CFlash *pmflash, BYTE MLC);
-	UINT setEccMap(ULONG Address, CFlash *pmflash, BYTE MaxECC);
+	UINT setCellMap(ULONG Address, BYTE MLC);
+	UINT setEccMap(ULONG Address, BYTE MaxECC);
 	UINT setSystemBlock(CFlash *pflash);
+	UINT setEccErrBlock(CFlash *pflash);
 	RTblInfo * getRTInfoTable();
 	ROOT_VARS * getRootTable();
 	MapChipSelect * getUFDBlockMap();
@@ -38,10 +39,11 @@ public:
 	UINT writeEccMap();
 	UINT ScanBlock(SettingConfgInfo *pmCurSettingConfgInfo);
 	void setMapEntryItem(BYTE CEIndex, BYTE ChannelIndex,INT EntryItemIndex, BYTE BlockItemIndex, BYTE Value);
-	BYTE getMapEntryItem(INT EntryItemIndex, BYTE BlockItemIndex);
+	BYTE getMapEntryItem(BYTE CEIndex, BYTE ChannelIndex,INT EntryItemIndex, BYTE BlockItemIndex);
 	UINT EraseAllBlock();
 	MapChipSelect *AllocateBlockMapMemory();
-
+	BYTE GetUFDBlockMapByByte(BYTE CEIndex, BYTE ChannelIndex, INT EntryItemIndex);
+	UINT UpdatePairMapByAddress(ULONG Address, BYTE MLC, BYTE MaxECC);
 };
 
 #endif /* CROOTTABLE_H_ */

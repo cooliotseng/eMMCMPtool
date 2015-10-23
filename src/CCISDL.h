@@ -20,10 +20,8 @@ public:
 	UINT Execute(SettingConfgInfo *pCurSettingConfgInfo,
 			CFlash			*pflash,
 			CRootTable		*pRootTable,
-			eMMC_CIS_INFO *pCISInfo,
 			UINT 			*eCISADDR,
 			UINT			*Original_EraseCnt,
-			UINT 			OldCISVersionExit,
 			UINT			Terminate);
 };
 
